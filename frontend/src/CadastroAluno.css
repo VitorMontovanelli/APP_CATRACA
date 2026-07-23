@@ -1,0 +1,186 @@
+.cadastro-page {
+  background-color: #0b1220;
+  min-height: 100vh;
+}
+
+.cadastro-topbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-bottom: 1px solid #1c2537;
+  color: #5eead4;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background-color: #0b1220;
+}
+
+.cadastro-topbar-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+.cadastro-content {
+  padding: 68px 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.cadastro-card {
+  width: 100%;
+  max-width: 640px;
+}
+
+.cadastro-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #f4f6f8;
+}
+
+.cadastro-subtitle {
+  margin: 4px 0 20px 0;
+  font-size: 12px;
+  color: #7c8798;
+}
+
+.cadastro-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+
+.cadastro-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.cadastro-field-full {
+  grid-column: 1 / -1;
+}
+
+.cadastro-label {
+  font-size: 11px;
+  color: #a7b0bf;
+  margin-bottom: 6px;
+}
+
+.cadastro-input {
+  height: 34px;
+  padding: 0 10px;
+  background-color: #121a29;
+  border: 1px solid #232e42;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.cadastro-input::placeholder {
+  color: #4b5563;
+}
+
+.cadastro-input:focus {
+  border-color: #5eead4;
+}
+
+.cadastro-input-error {
+  border-color: #f87171;
+}
+
+.cadastro-field-error {
+  font-size: 11px;
+  color: #f87171;
+  margin-top: 4px;
+}
+
+.cadastro-select {
+  height: 34px;
+  padding: 0 10px;
+  background-color: #121a29;
+  border: 1px solid #232e42;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%237c8798'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.cadastro-select:focus {
+  border-color: #5eead4;
+}
+
+.cadastro-select-wrapper {
+  position: relative;
+}
+
+.cadastro-status-dot {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.cadastro-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cadastro-btn {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: opacity 0.15s;
+}
+
+.cadastro-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cadastro-btn-cancel {
+  background: transparent;
+  border: 1px solid #232e42;
+  color: #a7b0bf;
+}
+
+.cadastro-btn-submit {
+  background-color: #5eead4;
+  border: none;
+  color: #053b32;
+  font-weight: 500;
+}
+
+.cadastro-btn-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}

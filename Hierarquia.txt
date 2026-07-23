@@ -1,0 +1,60 @@
+Hierarquia
+ADMIN SUPREMO
+- ACESSO A TUDO
+- CRIA O USUARIO ADMIN
+
+ADMIN
+- CRIA USUARIO NORMAL
+
+
+Com isso, temos que o ADMIN vai ter acesso a partes da tela do ADMIN SUPREMO, e os usuários normais também vao ser limitados a algumas telas.
+
+
+users
+├── id (único)
+├── name 
+├── email
+├── senha
+├── caminho          → enum: super_admin | admin | aluno
+├── registrador    → id de quem criou (rastreabilidade)
+├── ativar/desativar
+└── data de criacao
+
+alunos (dados específicos do aluno)
+├── user_id       → FK users
+├── plano
+├── status        → ativo | inadimplente | suspenso | se a catraca libera
+├── data_vencimento
+└── biometria_id  → FK biometria
+
+biometria
+├── id 			de quem é a digital
+├── user_id       → FK users
+├── template      → dado biométrico (nunca a imagem crua, só o template)
+└── enrolled_at 	quando foi cadastrado
+
+catraca
+├── id	 
+├── ip / serial	como o sistema se comunica com o dispositivo fisico
+├── status        → online | offline
+└── last_seen		detectar catraca offline
+
+access_logs
+├── id
+├── user_id       → FK users, quem tentou passar
+├── timestamp
+├── resultado     → liberado | negado
+└── motivo        → ex: "mensalidade vencida", "digital não reconhecida"
+
+audit_logs rastreabilidade administrativa
+├── id
+├── actor_id      → quem fez a ação
+├── action        → ex: "criou aluno", "removeu admin"
+├── target_id     → sobre quem foi feita a ação
+└── timestamp		quando
+
+Com essa tabela, quero ver se é possível captar quantas vezes os alunos vem no dia. Para determinar o cliente ativo dentro da academia.
+
+Pagamento do dia a dia, forma de pagamento.
+
+
