@@ -1,46 +1,5 @@
 export namespace main {
 	
-	export class AuditLog {
-	    id: number;
-	    actor_id: number;
-	    action: string;
-	    target_id?: number;
-	    details: string;
-	    // Go type: time
-	    timestamp: any;
-
-	    static createFrom(source: any = {}) {
-	        return new AuditLog(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.actor_id = source["actor_id"];
-	        this.action = source["action"];
-	        this.target_id = source["target_id"];
-	        this.details = source["details"];
-	        this.timestamp = this.convertValues(source["timestamp"], null);
-	    }
-
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class AccessLog {
 	    id: number;
 	    user_id?: number;
@@ -80,6 +39,174 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class AlunoPorPlano {
+	    student_id: number;
+	    nome: string;
+	    cpf: string;
+	    status: string;
+	    start_date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AlunoPorPlano(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.student_id = source["student_id"];
+	        this.nome = source["nome"];
+	        this.cpf = source["cpf"];
+	        this.status = source["status"];
+	        this.start_date = source["start_date"];
+	    }
+	}
+	export class AuditLog {
+	    id: number;
+	    actor_id: number;
+	    action: string;
+	    target_id?: number;
+	    details: string;
+	    // Go type: time
+	    timestamp: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new AuditLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.actor_id = source["actor_id"];
+	        this.action = source["action"];
+	        this.target_id = source["target_id"];
+	        this.details = source["details"];
+	        this.timestamp = this.convertValues(source["timestamp"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class CobrancaFatura {
+	    id: number;
+	    amount_cents: number;
+	    status: string;
+	    due_date: string;
+	    paid_at?: string;
+	    comprovante?: string;
+	    dias_vencido: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CobrancaFatura(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.amount_cents = source["amount_cents"];
+	        this.status = source["status"];
+	        this.due_date = source["due_date"];
+	        this.paid_at = source["paid_at"];
+	        this.comprovante = source["comprovante"];
+	        this.dias_vencido = source["dias_vencido"];
+	    }
+	}
+	export class CobrancaAluno {
+	    student_id: number;
+	    nome: string;
+	    cpf: string;
+	    plano_nome: string;
+	    plano_preco: number;
+	    status_plano: string;
+	    due_day: number;
+	    faturas: CobrancaFatura[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CobrancaAluno(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.student_id = source["student_id"];
+	        this.nome = source["nome"];
+	        this.cpf = source["cpf"];
+	        this.plano_nome = source["plano_nome"];
+	        this.plano_preco = source["plano_preco"];
+	        this.status_plano = source["status_plano"];
+	        this.due_day = source["due_day"];
+	        this.faturas = this.convertValues(source["faturas"], CobrancaFatura);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class InadimplenteReport {
+	    student_id: number;
+	    nome: string;
+	    cpf: string;
+	    telefone?: string;
+	    email?: string;
+	    plano_nome: string;
+	    plano_preco: number;
+	    status_plano: string;
+	    invoice_id: number;
+	    valor_devido: number;
+	    data_vencimento: string;
+	    dias_vencido: number;
+	    ultimo_pagamento?: string;
+	    total_em_aberto: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new InadimplenteReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.student_id = source["student_id"];
+	        this.nome = source["nome"];
+	        this.cpf = source["cpf"];
+	        this.telefone = source["telefone"];
+	        this.email = source["email"];
+	        this.plano_nome = source["plano_nome"];
+	        this.plano_preco = source["plano_preco"];
+	        this.status_plano = source["status_plano"];
+	        this.invoice_id = source["invoice_id"];
+	        this.valor_devido = source["valor_devido"];
+	        this.data_vencimento = source["data_vencimento"];
+	        this.dias_vencido = source["dias_vencido"];
+	        this.ultimo_pagamento = source["ultimo_pagamento"];
+	        this.total_em_aberto = source["total_em_aberto"];
+	    }
+	}
 	export class Invoice {
 	    id: number;
 	    student_plan_id: number;
@@ -95,6 +222,7 @@ export namespace main {
 	    gateway_transaction_id?: string;
 	    pix_qr_code?: string;
 	    pix_br_code?: string;
+	    comprovante?: string;
 	    notes?: string;
 	    // Go type: time
 	    created_at: any;
@@ -121,6 +249,7 @@ export namespace main {
 	        this.gateway_transaction_id = source["gateway_transaction_id"];
 	        this.pix_qr_code = source["pix_qr_code"];
 	        this.pix_br_code = source["pix_br_code"];
+	        this.comprovante = source["comprovante"];
 	        this.notes = source["notes"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.student_name = source["student_name"];
@@ -212,44 +341,6 @@ export namespace main {
 	        this.created_at = this.convertValues(source["created_at"], null);
 	    }
 	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class AlunoPorPlano {
-	    student_id: number;
-	    nome: string;
-	    cpf: string;
-	    status: string;
-	    start_date: string;
-
-	    static createFrom(source: any = {}) {
-	        return new AlunoPorPlano(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.student_id = source["student_id"];
-	        this.nome = source["nome"];
-	        this.cpf = source["cpf"];
-	        this.status = source["status"];
-	        this.start_date = source["start_date"];
-	    }
-
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -505,148 +596,6 @@ export namespace main {
 	        this.plan_price_cents = source["plan_price_cents"];
 	    }
 	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class CobrancaAluno {
-	    student_id: number;
-	    nome: string;
-	    cpf: string;
-	    plano_nome: string;
-	    plano_preco: number;
-	    status_plano: string;
-	    due_day: number;
-	    faturas: CobrancaFatura[];
-
-	    static createFrom(source: any = {}) {
-	        return new CobrancaAluno(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.student_id = source["student_id"];
-	        this.nome = source["nome"];
-	        this.cpf = source["cpf"];
-	        this.plano_nome = source["plano_nome"];
-	        this.plano_preco = source["plano_preco"];
-	        this.status_plano = source["status_plano"];
-	        this.due_day = source["due_day"];
-	        this.faturas = this.convertValues(source["faturas"], CobrancaFatura);
-	    }
-
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class CobrancaFatura {
-	    id: number;
-	    amount_cents: number;
-	    status: string;
-	    due_date: string;
-	    paid_at?: string;
-	    comprovante?: string;
-	    dias_vencido: number;
-
-	    static createFrom(source: any = {}) {
-	        return new CobrancaFatura(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.amount_cents = source["amount_cents"];
-	        this.status = source["status"];
-	        this.due_date = source["due_date"];
-	        this.paid_at = source["paid_at"];
-	        this.comprovante = source["comprovante"];
-	        this.dias_vencido = source["dias_vencido"];
-	    }
-
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class InadimplenteReport {
-	    student_id: number;
-	    nome: string;
-	    cpf: string;
-	    telefone?: string;
-	    email?: string;
-	    plano_nome: string;
-	    plano_preco: number;
-	    status_plano: string;
-	    invoice_id: number;
-	    valor_devido: number;
-	    data_vencimento: string;
-	    dias_vencido: number;
-	    ultimo_pagamento?: string;
-	    total_em_aberto: number;
-
-	    static createFrom(source: any = {}) {
-	        return new InadimplenteReport(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.student_id = source["student_id"];
-	        this.nome = source["nome"];
-	        this.cpf = source["cpf"];
-	        this.telefone = source["telefone"];
-	        this.email = source["email"];
-	        this.plano_nome = source["plano_nome"];
-	        this.plano_preco = source["plano_preco"];
-	        this.status_plano = source["status_plano"];
-	        this.invoice_id = source["invoice_id"];
-	        this.valor_devido = source["valor_devido"];
-	        this.data_vencimento = source["data_vencimento"];
-	        this.dias_vencido = source["dias_vencido"];
-	        this.ultimo_pagamento = source["ultimo_pagamento"];
-	        this.total_em_aberto = source["total_em_aberto"];
-	    }
-
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;

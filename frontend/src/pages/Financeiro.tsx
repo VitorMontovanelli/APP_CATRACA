@@ -5,7 +5,6 @@ import {
   ConfirmarPagamento,
   CancelarInvoice,
   DeletarInvoice,
-  GerarInvoice,
 } from "../../wailsjs/go/main/App";
 
 interface Invoice {
@@ -109,14 +108,6 @@ function Financeiro({ user }: FinanceiroProps) {
     if (!canManage) return;
     try {
       await DeletarInvoice(inv.id);
-      await load();
-    } catch (e) { setError(String(e)); }
-  }
-
-  async function generateInvoice(spId: number) {
-    if (!canManage) return;
-    try {
-      await GerarInvoice(spId);
       await load();
     } catch (e) { setError(String(e)); }
   }
@@ -225,11 +216,6 @@ function Financeiro({ user }: FinanceiroProps) {
                   {sp.plan_name} · {formatCents(sp.plan_price_cents)} · {sp.status}
                 </div>
               </div>
-              <button onClick={() => generateInvoice(sp.id)} style={{
-                padding: "6px 12px", border: "1px solid #60a5fa", borderRadius: 6,
-                background: "transparent", color: "#60a5fa", fontSize: 12,
-                fontFamily: "inherit", cursor: "pointer",
-              }}>Gerar Fatura</button>
             </div>
           ))}
           {activePlans.length === 0 && (

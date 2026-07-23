@@ -59,11 +59,20 @@ func initDB() *gorm.DB {
 }
 
 func seedData(db *gorm.DB) {
+	cleanTestData(db)
 	seedSuperAdmin(db)
 	seedTestUsers(db)
 	seedPaymentData(db)
 	seedAlunosTeste(db)
 	seedInadimplentesTeste(db)
+	seedAnualPlan(db)
+}
+
+func cleanTestData(db *gorm.DB) {
+	db.Exec("DELETE FROM invoices WHERE student_id IN (SELECT id FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%')")
+	db.Exec("DELETE FROM student_plans WHERE student_id IN (SELECT id FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%')")
+	db.Exec("DELETE FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%'")
+	db.Exec("DELETE FROM plans WHERE name LIKE '%Teste%' OR name LIKE '%Eduardo%'")
 }
 
 func seedSuperAdmin(db *gorm.DB) {
@@ -264,6 +273,18 @@ func seedInadimplentesTeste(db *gorm.DB) {
 		DueDate:       now.AddDate(0, -2, -10).Format("2006-01-02"),
 		PaidAt:        timePtr(now.AddDate(0, -2, -5)),
 		PaidAmountCents: intPtr(plan2.PriceCents),
+	})
+}
+
+func seedAnualPlan(db *gorm.DB) {
+	var count int64
+	db.Model(&Plan{}).Where("name = ?", "Anual").Count(&count)
+	if count > 0 {
+		return
+	}
+	db.Create(&Plan{
+		Name: "Anual", Description: "12 meses com 20% de desconto",
+		DurationDays: 365, PriceCents: 119900, GracePeriodDays: 5, Active: true,
 	})
 }
 

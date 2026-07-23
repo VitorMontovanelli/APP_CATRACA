@@ -1,32 +1,34 @@
 # Catraca-App
 
-Sistema desktop de controle de acesso e gestão financeira para academias.
+**Versão:** 1.0.0
+
+Sistema desktop de controle de acesso biométrico e gestão financeira para academias, construído com Wails 2, Go e React.
 
 ## Funcionalidades
 
-- **Catraca** — liberação/negação de acesso por biometria
-- **Alunos** — cadastro, planos, vencimentos
-- **Financeiro** — faturas, confirmação de pagamento, comprovantes
-- **Cobrança** — lista de alunos com faturas pendentes/pagas, upload de PDF
-- **Planos** — gerenciamento de planos com lista de alunos vinculados
-- **Logs** — auditoria e histórico de acesso
-- **Usuários** — controle de permissões (super_admin / admin)
+- **Catraca Virtual** — liberação/negação de acesso por biometria simulada
+- **Alunos** — cadastro completo com planos, vencimentos e histórico
+- **Financeiro** — faturas, confirmação/cancelamento de pagamento, upload de comprovantes (PDF via base64)
+- **Cobrança** — lista de faturas vencidas com upload de comprovante
+- **Planos** — gerenciamento de planos (mensal, trimestral, semestral, anual) com alunos vinculados
+- **Logs** — auditoria de ações e histórico de acesso à catraca
+- **Usuários** — controle de permissões hierárquico (super_admin / admin)
 
 ## Stack
 
-| Camada    | Tecnologia                     |
-|-----------|--------------------------------|
-| Frontend  | React 19 + TypeScript + Vite 7 |
-| Backend   | Go 1.26                        |
-| Desktop   | Wails 2 (WebView2)             |
-| Banco     | SQLite (glebarez/sqlite)       |
+| Camada    | Tecnologia                                 |
+|-----------|--------------------------------------------|
+| Frontend  | React 19 + TypeScript + Vite 7             |
+| Backend   | Go 1.26 + GORM                             |
+| Desktop   | Wails 2 (WebView2)                         |
+| Banco     | SQLite via glebarez/sqlite (pure Go, CGO-free) |
 
 ## Requisitos
 
 - Go 1.26+
 - Node.js 20+
 - Wails CLI 2.13+
-- WebView2 (Windows 10/11)
+- WebView2 Runtime (Windows 10/11 incluso)
 
 ## Desenvolvimento
 
@@ -40,17 +42,40 @@ wails dev
 wails build
 ```
 
-> **Nota:** Em máquinas com política de Controle de Aplicativo (WDAC), o binding
-> pode ser bloqueado. Use `wails build -skipbindings` como alternativa.
-
-## Versão
-
-```
-v1.0.0
-```
+> **Nota:** Em máquinas com política de Controle de Aplicativo (WDAC), `wailsbuildings.exe` pode ser bloqueado. Use `wails build -skipbindings` como alternativa (as bindings já estão geradas em `frontend/wailsjs/`).
 
 ## Credencial padrão
 
 | Email              | Senha    | Cargo       |
 |--------------------|----------|-------------|
 | admin@catraca.com  | admin123 | super_admin |
+
+## Estrutura do projeto
+
+```
+catraca-app/
+├── app.go             # Lógica de negócio (Go)
+├── db.go              # Inicialização do banco e seed
+├── models.go          # Modelos GORM
+├── version.go         # Constante de versão
+├── main.go            # Entrypoint Wails
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx          # Roteamento e layout
+│   │   ├── App.css          # Estilos globais
+│   │   └── pages/           # Páginas React
+│   │       ├── Home.tsx
+│   │       ├── Login.tsx
+│   │       ├── Alunos.tsx
+│   │       ├── Financeiro.tsx
+│   │       ├── Cobranca.tsx
+│   │       ├── Planos.tsx
+│   │       ├── Logs.tsx
+│   │       └── Usuarios.tsx
+│   └── wailsjs/             # Bindings geradas (Go → JS)
+└── build/                   # Artefatos de build
+```
+
+## Licença
+
+Proprietário — todos os direitos reservados.

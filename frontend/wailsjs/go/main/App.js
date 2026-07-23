@@ -10,6 +10,10 @@ export function AlterarSenha(arg1, arg2) {
   return window['go']['main']['App']['AlterarSenha'](arg1, arg2);
 }
 
+export function AppVersion() {
+  return window['go']['main']['App']['AppVersion']();
+}
+
 export function AtivarPaymentGateway(arg1, arg2) {
   return window['go']['main']['App']['AtivarPaymentGateway'](arg1, arg2);
 }
@@ -78,16 +82,16 @@ export function CancelarInvoice(arg1) {
   return window['go']['main']['App']['CancelarInvoice'](arg1);
 }
 
-export function DeletarInvoice(arg1) {
-  return window['go']['main']['App']['DeletarInvoice'](arg1);
-}
-
 export function CancelarStudentPlan(arg1) {
   return window['go']['main']['App']['CancelarStudentPlan'](arg1);
 }
 
 export function ConfirmarPagamento(arg1, arg2, arg3) {
   return window['go']['main']['App']['ConfirmarPagamento'](arg1, arg2, arg3);
+}
+
+export function CriarInvoiceTeste() {
+  return window['go']['main']['App']['CriarInvoiceTeste']();
 }
 
 export function CriarPaymentMethod(arg1, arg2, arg3, arg4) {
@@ -114,6 +118,18 @@ export function CriarUsuario(arg1, arg2, arg3, arg4, arg5) {
   return window['go']['main']['App']['CriarUsuario'](arg1, arg2, arg3, arg4, arg5);
 }
 
+export function DeletarDadosTeste() {
+  return window['go']['main']['App']['DeletarDadosTeste']();
+}
+
+export function DeletarInvoice(arg1) {
+  return window['go']['main']['App']['DeletarInvoice'](arg1);
+}
+
+export function DeletarPlano(arg1) {
+  return window['go']['main']['App']['DeletarPlano'](arg1);
+}
+
 export function DeletarUsuario(arg1) {
   return window['go']['main']['App']['DeletarUsuario'](arg1);
 }
@@ -122,16 +138,12 @@ export function GerarInvoice(arg1) {
   return window['go']['main']['App']['GerarInvoice'](arg1);
 }
 
-export function DeletarDadosTeste() {
-  return window['go']['main']['App']['DeletarDadosTeste']();
-}
-
 export function ListarAccessLogs() {
   return window['go']['main']['App']['ListarAccessLogs']();
 }
 
-export function CriarInvoiceTeste() {
-  return window['go']['main']['App']['CriarInvoiceTeste']();
+export function ListarAlunosPorPlano(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListarAlunosPorPlano'](arg1, arg2, arg3);
 }
 
 export function ListarAuditLogs() {
@@ -146,10 +158,6 @@ export function ListarInadimplentes() {
   return window['go']['main']['App']['ListarInadimplentes']();
 }
 
-export function SalvarComprovante(arg1, arg2, arg3) {
-  return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
-}
-
 export function ListarInvoices() {
   return window['go']['main']['App']['ListarInvoices']();
 }
@@ -160,14 +168,6 @@ export function ListarPaymentGateways() {
 
 export function ListarPaymentMethods() {
   return window['go']['main']['App']['ListarPaymentMethods']();
-}
-
-export function DeletarPlano(arg1) {
-  return window['go']['main']['App']['DeletarPlano'](arg1);
-}
-
-export function ListarAlunosPorPlano(arg1, arg2, arg3) {
-  return window['go']['main']['App']['ListarAlunosPorPlano'](arg1, arg2, arg3);
 }
 
 export function ListarPlanos() {
@@ -194,12 +194,12 @@ export function Login(arg1, arg2) {
   return window['go']['main']['App']['Login'](arg1, arg2);
 }
 
-export function AppVersion() {
-  return window['go']['main']['App']['AppVersion']();
-}
-
 export function MeuPerfil() {
   return window['go']['main']['App']['MeuPerfil']();
+}
+
+export function SalvarComprovante(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
 }
 
 export function VerificarAcessoAluno(arg1) {

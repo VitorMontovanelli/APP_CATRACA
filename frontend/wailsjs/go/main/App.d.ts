@@ -6,6 +6,8 @@ export function AlterarFoto(arg1:string):Promise<void>;
 
 export function AlterarSenha(arg1:string,arg2:string):Promise<void>;
 
+export function AppVersion():Promise<string>;
+
 export function AtivarPaymentGateway(arg1:number,arg2:boolean):Promise<void>;
 
 export function AtivarPaymentMethod(arg1:number,arg2:boolean):Promise<void>;
@@ -40,11 +42,11 @@ export function CadastrarAluno(arg1:string,arg2:string,arg3:number,arg4:number):
 
 export function CancelarInvoice(arg1:number):Promise<void>;
 
-export function DeletarInvoice(arg1:number):Promise<void>;
-
 export function CancelarStudentPlan(arg1:number):Promise<void>;
 
 export function ConfirmarPagamento(arg1:number,arg2:number,arg3:number):Promise<void>;
+
+export function CriarInvoiceTeste():Promise<void>;
 
 export function CriarPaymentMethod(arg1:string,arg2:string,arg3:number,arg4:number):Promise<main.PaymentMethod>;
 
@@ -58,15 +60,19 @@ export function CriarStudentPlan(arg1:number,arg2:number,arg3:number):Promise<ma
 
 export function CriarUsuario(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number):Promise<main.User>;
 
+export function DeletarDadosTeste():Promise<void>;
+
+export function DeletarInvoice(arg1:number):Promise<void>;
+
+export function DeletarPlano(arg1:number):Promise<void>;
+
 export function DeletarUsuario(arg1:number):Promise<void>;
 
 export function GerarInvoice(arg1:number):Promise<main.Invoice>;
 
-export function CriarInvoiceTeste():Promise<void>;
-
-export function DeletarDadosTeste():Promise<void>;
-
 export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
+
+export function ListarAlunosPorPlano(arg1:number,arg2:number,arg3:number):Promise<Array<main.AlunoPorPlano>>;
 
 export function ListarAuditLogs():Promise<Array<main.AuditLog>>;
 
@@ -74,17 +80,11 @@ export function ListarCobranca():Promise<Array<main.CobrancaAluno>>;
 
 export function ListarInadimplentes():Promise<Array<main.InadimplenteReport>>;
 
-export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
-
 export function ListarInvoices():Promise<Array<main.Invoice>>;
 
 export function ListarPaymentGateways():Promise<Array<main.PaymentGateway>>;
 
 export function ListarPaymentMethods():Promise<Array<main.PaymentMethod>>;
-
-export function DeletarPlano(arg1:number):Promise<void>;
-
-export function ListarAlunosPorPlano(arg1:number,arg2:number,arg3:number):Promise<[Array<main.AlunoPorPlano>, number]>;
 
 export function ListarPlanos():Promise<Array<main.Plan>>;
 
@@ -98,8 +98,8 @@ export function ListarUsuarios():Promise<Array<main.User>>;
 
 export function Login(arg1:string,arg2:string):Promise<main.User>;
 
-export function AppVersion():Promise<string>;
-
 export function MeuPerfil():Promise<main.User>;
+
+export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
 
 export function VerificarAcessoAluno(arg1:number):Promise<main.ResultadoAcesso>;

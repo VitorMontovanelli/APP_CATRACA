@@ -79,7 +79,9 @@ function Planos({ user }: PlanosProps) {
     setLoadingStudents((prev) => ({ ...prev, [planId]: true }));
     setPageMap((prev) => ({ ...prev, [planId]: page }));
     try {
-      const [list, total] = await ListarAlunosPorPlano(planId, page, PAGE_SIZE);
+      const res = await ListarAlunosPorPlano(planId, page, PAGE_SIZE);
+      const list = (res as unknown as main.AlunoPorPlano[][])[0] || [];
+      const total = (res as unknown as number[])[1] || 0;
       setStudentsMap((prev) => ({ ...prev, [planId]: list }));
       setTotalMap((prev) => ({ ...prev, [planId]: total }));
     } catch (e) {
