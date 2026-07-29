@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -324,10 +325,28 @@ func (a *App) ListarStudentsComPlanos() ([]StudentComPlano, error) {
 
 func (a *App) Login(email, senha string) (*User, error) {
 	var u User
-	err := a.db.Where("email = ? AND senha = ?", email, senha).First(&u).Error
+	err := a.db.Where("email = ?", email).First(&u).Error
 	if err != nil {
 		return nil, fmt.Errorf("email ou senha inválidos")
 	}
+
+	if strings.HasPrefix(u.Senha, "$2a$") || strings.HasPrefix(u.Senha, "$2y$") {
+		// Validar usando bcrypt
+		if err := bcrypt.CompareHashAndPassword([]byte(u.Senha), []byte(senha)); err != nil {
+			return nil, fmt.Errorf("email ou senha inválidos")
+		}
+	} else {
+		// Senha legada em texto plano
+		if u.Senha != senha {
+			return nil, fmt.Errorf("email ou senha inválidos")
+		}
+		// Migrar de forma transparente para bcrypt
+		hashed, err := bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
+		if err == nil {
+			a.db.Model(&u).Update("senha", string(hashed))
+		}
+	}
+
 	if !u.Ativo {
 		return nil, fmt.Errorf("usuário desativado")
 	}
@@ -345,10 +364,15 @@ func (a *App) CriarUsuario(name, email, senha, cargo string, registradorID uint)
 		return nil, fmt.Errorf("você não tem permissão para criar usuário com cargo %s", cargo)
 	}
 
+	hashed, err := bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao gerar hash da senha: %w", err)
+	}
+
 	user := User{
 		Name:          name,
 		Email:         email,
-		Senha:         senha,
+		Senha:         string(hashed),
 		Cargo:         cargo,
 		RegistradorID: uintPtr(registradorID),
 	}
@@ -361,7 +385,15 @@ func (a *App) CriarUsuario(name, email, senha, cargo string, registradorID uint)
 
 func (a *App) ListarUsuarios() ([]User, error) {
 	var users []User
-	err := a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").Order("id").Find(&users).Error
+	var err error
+	if a.actorCargo == "super_admin" {
+		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").Order("id").Find(&users).Error
+	} else {
+		// admin só pode ver a si mesmo e usuários criados por ele (excluindo super_admins)
+		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").
+			Where("(id = ? OR registrador_id = ?) AND cargo != ?", a.actorID, a.actorID, "super_admin").
+			Order("id").Find(&users).Error
+	}
 	return users, err
 }
 
@@ -439,10 +471,23 @@ func (a *App) AlterarSenha(senhaAtual, novaSenha string) error {
 	if err := a.db.First(&u, a.actorID).Error; err != nil {
 		return err
 	}
-	if u.Senha != senhaAtual {
-		return fmt.Errorf("senha atual incorreta")
+
+	if strings.HasPrefix(u.Senha, "$2a$") || strings.HasPrefix(u.Senha, "$2y$") {
+		if err := bcrypt.CompareHashAndPassword([]byte(u.Senha), []byte(senhaAtual)); err != nil {
+			return fmt.Errorf("senha atual incorreta")
+		}
+	} else {
+		if u.Senha != senhaAtual {
+			return fmt.Errorf("senha atual incorreta")
+		}
 	}
-	err := a.db.Model(&User{}).Where("id = ?", a.actorID).Update("senha", novaSenha).Error
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(novaSenha), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("erro ao criptografar nova senha: %w", err)
+	}
+
+	err = a.db.Model(&User{}).Where("id = ?", a.actorID).Update("senha", string(hashed)).Error
 	if err == nil {
 		a.registrarAudit("alterou_senha", a.actorID)
 	}
@@ -653,7 +698,7 @@ func (a *App) ListarStudentPlans() ([]StudentPlan, error) {
 		SELECT sp.id, sp.student_id, sp.plan_id, sp.status, sp.payment_method_id,
 			sp.due_day, sp.start_date, sp.end_date, sp.cancelled_at, sp.notes,
 			sp.created_at, sp.updated_at,
-			s.nome, p.name, p.price_cents
+			s.nome AS student_name, p.name AS plan_name, p.price_cents AS plan_price_cents
 		FROM student_plans sp
 		JOIN students s ON s.id = sp.student_id
 		JOIN plans p ON p.id = sp.plan_id
@@ -697,7 +742,7 @@ func (a *App) BuscarStudentPlan(id uint) (*StudentPlan, error) {
 		SELECT sp.id, sp.student_id, sp.plan_id, sp.status, sp.payment_method_id,
 			sp.due_day, sp.start_date, sp.end_date, sp.cancelled_at, sp.notes,
 			sp.created_at, sp.updated_at,
-			s.nome, p.name, p.price_cents
+			s.nome AS student_name, p.name AS plan_name, p.price_cents AS plan_price_cents
 		FROM student_plans sp
 		JOIN students s ON s.id = sp.student_id
 		JOIN plans p ON p.id = sp.plan_id
@@ -819,7 +864,7 @@ func (a *App) BuscarInvoice(id uint) (*Invoice, error) {
 		SELECT i.id, i.student_plan_id, i.student_id, i.plan_id, i.amount_cents,
 			i.status, i.payment_method_id, i.due_date, i.paid_at, i.paid_amount_cents,
 			i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
-			s.nome, p.name, pm.name
+			s.nome AS student_name, p.name AS plan_name, pm.name AS payment_method_name
 		FROM invoices i
 		JOIN students s ON s.id = i.student_id
 		JOIN plans p ON p.id = i.plan_id
@@ -849,7 +894,7 @@ func (a *App) ListarInvoices() ([]Invoice, error) {
 		SELECT i.id, i.student_plan_id, i.student_id, i.plan_id, i.amount_cents,
 			i.status, i.payment_method_id, i.due_date, i.paid_at, i.paid_amount_cents,
 			i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
-			s.nome, p.name, COALESCE(pm.name, '')
+			s.nome AS student_name, p.name AS plan_name, COALESCE(pm.name, '') AS payment_method_name
 		FROM invoices i
 		JOIN students s ON s.id = i.student_id
 		JOIN plans p ON p.id = i.plan_id
@@ -1095,9 +1140,9 @@ func (a *App) SalvarComprovante(invoiceID uint, base64Data, fileName string) err
 		return fmt.Errorf("erro ao criar diretório: %w", err)
 	}
 
-	ext := filepath.Ext(fileName)
-	if ext == "" {
-		ext = ".pdf"
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if ext != ".pdf" {
+		return fmt.Errorf("formato de arquivo inválido: apenas comprovantes em formato PDF são permitidos")
 	}
 	dest := filepath.Join(dir, fmt.Sprintf("invoice_%d%s", invoiceID, ext))
 
@@ -1267,4 +1312,134 @@ func uintPtr(n uint) *uint {
 		return nil
 	}
 	return &n
+}
+
+type PlanoContador struct {
+	Nome string `json:"nome"`
+	Qtd  int64  `json:"qtd"`
+}
+
+type MetricasHome struct {
+	TotalUsuarios      int64           `json:"total_usuarios"`
+	TotalAdmins        int64           `json:"total_admins"`
+	TotalAlunos        int64           `json:"total_alunos"`
+	TotalFaturadoCents int64           `json:"total_faturado_cents"`
+	TotalAtrasoCents   int64           `json:"total_atraso_cents"`
+	TotalPendenteCents int64           `json:"total_pendente_cents"`
+	PlanosDistribuicao []PlanoContador `json:"planos_distribuicao"`
+}
+
+func (a *App) ObterMetricasHome() (*MetricasHome, error) {
+	var stats MetricasHome
+
+	// Total usuários
+	a.db.Model(&User{}).Count(&stats.TotalUsuarios)
+
+	// Admins
+	a.db.Model(&User{}).Where("cargo = ? OR cargo = ?", "super_admin", "admin").Count(&stats.TotalAdmins)
+
+	// Alunos matriculados
+	a.db.Model(&Student{}).Count(&stats.TotalAlunos)
+
+	// Total Faturado
+	a.db.Model(&Invoice{}).Where("status = ?", "paid").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalFaturadoCents)
+
+	// Total Atraso
+	a.db.Model(&Invoice{}).Where("status = ?", "overdue").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalAtrasoCents)
+
+	// Total Pendente
+	a.db.Model(&Invoice{}).Where("status = ?", "pending").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalPendenteCents)
+
+	// Distribuição de planos
+	type result struct {
+		Name string
+		Qtd  int64
+	}
+	var dist []result
+	err := a.db.Raw(`
+		SELECT p.name, COUNT(sp.id) as qtd
+		FROM plans p
+		LEFT JOIN student_plans sp ON sp.plan_id = p.id AND sp.status = 'active'
+		GROUP BY p.id
+	`).Scan(&dist).Error
+	if err == nil {
+		stats.PlanosDistribuicao = make([]PlanoContador, len(dist))
+		for i, r := range dist {
+			stats.PlanosDistribuicao[i] = PlanoContador{
+				Nome: r.Name,
+				Qtd:  r.Qtd,
+			}
+		}
+	}
+
+	return &stats, nil
+}
+
+type AcessoEstatistica struct {
+	Label    string `json:"label"`
+	Liberado int    `json:"liberado"`
+	Negado   int    `json:"negado"`
+}
+
+func (a *App) ObterEstatisticasAcesso(filtro string) ([]AcessoEstatistica, error) {
+	var list []AcessoEstatistica
+	var query string
+	var since time.Time
+
+	now := time.Now()
+
+	switch filtro {
+	case "dia":
+		// Últimos 7 dias, agrupados por dia
+		since = now.AddDate(0, 0, -6) // 7 dias incluindo hoje
+		query = `
+			SELECT strftime('%d/%m', data_hora) as label,
+			       SUM(CASE WHEN liberado = 1 THEN 1 ELSE 0 END) as liberado,
+			       SUM(CASE WHEN liberado = 0 THEN 1 ELSE 0 END) as negado
+			FROM registro_acessos
+			WHERE data_hora >= ?
+			GROUP BY strftime('%Y-%m-%d', data_hora)
+			ORDER BY data_hora ASC
+		`
+	case "semana":
+		// Últimas 4 semanas, agrupadas por semana
+		since = now.AddDate(0, 0, -27) // 28 dias
+		query = `
+			SELECT 'Sem ' || strftime('%W', data_hora) as label,
+			       SUM(CASE WHEN liberado = 1 THEN 1 ELSE 0 END) as liberado,
+			       SUM(CASE WHEN liberado = 0 THEN 1 ELSE 0 END) as negado
+			FROM registro_acessos
+			WHERE data_hora >= ?
+			GROUP BY strftime('%Y-%W', data_hora)
+			ORDER BY data_hora ASC
+		`
+	case "mes":
+		// Últimos 6 meses, agrupados por mês
+		since = now.AddDate(0, -5, 0) // 6 meses
+		query = `
+			SELECT strftime('%m/%Y', data_hora) as label,
+			       SUM(CASE WHEN liberado = 1 THEN 1 ELSE 0 END) as liberado,
+			       SUM(CASE WHEN liberado = 0 THEN 1 ELSE 0 END) as negado
+			FROM registro_acessos
+			WHERE data_hora >= ?
+			GROUP BY strftime('%Y-%m', data_hora)
+			ORDER BY data_hora ASC
+		`
+	default:
+		return nil, fmt.Errorf("filtro inválido: %s", filtro)
+	}
+
+	err := a.db.Raw(query, since).Scan(&list).Error
+	return list, err
+}
+
+func (a *App) SalvarPermissoesUsuario(userID uint, permissoes string) error {
+	if a.actorCargo != "super_admin" {
+		return fmt.Errorf("permissão negada: apenas super_admin pode alterar permissões")
+	}
+	err := a.db.Model(&User{}).Where("id = ? AND cargo != ?", userID, "super_admin").Update("permissoes", permissoes).Error
+	if err == nil {
+		a.registrarAuditComDetalhes("alterou_permissoes", userID, fmt.Sprintf("permissoes=%s", permissoes))
+	}
+	return err
 }

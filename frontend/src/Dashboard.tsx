@@ -7,9 +7,10 @@ interface User {
   name: string;
   email: string;
   cargo: string;
+  permissoes?: string;
 }
 
-type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "catraca" | "cobranca";
+type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "catraca" | "cobranca" | "acesso";
 
 interface DashboardProps {
   user: User;
@@ -17,16 +18,49 @@ interface DashboardProps {
   children: (page: Page) => React.ReactNode;
 }
 
-const fullNav: { page: Page; label: string; icon: string; minCargo: string }[] = [
-  { page: "home", label: "Visão Geral", icon: "📊", minCargo: "admin" },
-  { page: "catraca", label: "Catraca", icon: "🔑", minCargo: "admin" },
-  { page: "alunos", label: "Alunos", icon: "🎓", minCargo: "admin" },
-  { page: "planos", label: "Planos", icon: "📋", minCargo: "admin" },
-  { page: "financeiro", label: "Financeiro", icon: "💰", minCargo: "admin" },
-  { page: "cobranca", label: "Cobrança", icon: "📋", minCargo: "admin" },
-  { page: "usuarios", label: "Usuários", icon: "👥", minCargo: "admin" },
-  { page: "metodos_pagamento", label: "Pagamentos", icon: "💳", minCargo: "admin" },
-  { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "admin" },
+interface NavItem {
+  page: Page;
+  label: string;
+  icon: string;
+  minCargo: string;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Principal",
+    items: [
+      { page: "home", label: "Visão Geral", icon: "📊", minCargo: "admin" },
+      { page: "catraca", label: "Catraca Virtual", icon: "🔑", minCargo: "admin" },
+    ],
+  },
+  {
+    title: "Matrículas",
+    items: [
+      { page: "alunos", label: "Gestão de Alunos", icon: "🎓", minCargo: "admin" },
+      { page: "planos", label: "Planos de Acesso", icon: "📋", minCargo: "admin" },
+    ],
+  },
+  {
+    title: "Financeiro",
+    items: [
+      { page: "financeiro", label: "Visão Financeira", icon: "💰", minCargo: "admin" },
+      { page: "cobranca", label: "Cobranças", icon: "⚠️", minCargo: "admin" },
+      { page: "metodos_pagamento", label: "Pagamentos", icon: "💳", minCargo: "admin" },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [
+      { page: "usuarios", label: "Usuários", icon: "👥", minCargo: "admin" },
+      { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "admin" },
+      { page: "acesso", label: "Acessos", icon: "🔑", minCargo: "super_admin" },
+    ],
+  },
 ];
 
 const cargoLevel: Record<string, number> = {
@@ -36,9 +70,29 @@ const cargoLevel: Record<string, number> = {
 
 function Dashboard({ user, onLogout, children }: DashboardProps) {
   const userLevel = cargoLevel[user.cargo] || 0;
-  const navItems = fullNav.filter((item) => (cargoLevel[item.minCargo] || 0) <= userLevel);
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [showPerfil, setShowPerfil] = useState(false);
+
+  // Filter items in each group by cargo and dynamic permissions
+  const filteredGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        // First check role requirements
+        if ((cargoLevel[item.minCargo] || 0) > userLevel) return false;
+
+        // super_admin has absolute access
+        if (user.cargo === "super_admin") return true;
+
+        // admin is subject to dynamic permissions
+        if (item.page === "acesso") return false; // admin never sees accesses page
+
+        // check list
+        const perms = user.permissoes ? user.permissoes.split(",") : ["home", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
+        return perms.includes(item.page);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <div className="dashboard">
@@ -46,44 +100,53 @@ function Dashboard({ user, onLogout, children }: DashboardProps) {
 
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo">AcessoID</div>
+          <div className="sidebar-logo">CatracaVMD</div>
+          
           <button
             onClick={() => setShowPerfil(true)}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              textAlign: "left", padding: 0, width: "100%", color: "inherit",
-              fontFamily: "inherit",
-            }}
+            className="sidebar-user-btn"
           >
-            <div className="sidebar-user">
+            <div className="sidebar-user-avatar">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user.name}</span>
-              <span className="sidebar-user-cargo">{user.cargo}</span>
+              <span className="sidebar-user-cargo">{user.cargo.replace("_", " ")}</span>
             </div>
           </button>
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.page}
-              className={`sidebar-nav-item ${currentPage === item.page ? "active" : ""}`}
-              onClick={() => setCurrentPage(item.page)}
-            >
-              <span className="sidebar-nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
+          {filteredGroups.map((group) => (
+            <div key={group.title} className="sidebar-group">
+              <div className="sidebar-group-title">{group.title}</div>
+              <div className="sidebar-group-items">
+                {group.items.map((item) => (
+                  <button
+                    key={item.page}
+                    className={`sidebar-nav-item ${currentPage === item.page ? "active" : ""}`}
+                    onClick={() => setCurrentPage(item.page)}
+                  >
+                    <span className="sidebar-nav-icon">{item.icon}</span>
+                    <span className="sidebar-nav-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
         <div className="sidebar-footer">
           <button className="sidebar-logout" onClick={onLogout}>
-            Sair
+            <span>🚪</span> Sair da Conta
           </button>
         </div>
       </aside>
 
       <main className="main-content">
-        {children(currentPage)}
+        <div className="content-container">
+          {children(currentPage)}
+        </div>
       </main>
     </div>
   );

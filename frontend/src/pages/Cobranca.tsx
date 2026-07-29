@@ -2,17 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { ListarInadimplentes, SalvarComprovante } from "../../wailsjs/go/main/App";
 import { main } from "../../wailsjs/go/models";
 
-const tdStyle: React.CSSProperties = {
-  padding: "10px 12px", fontSize: 12, borderBottom: "1px solid #232e42",
-  verticalAlign: "middle",
-};
-
-const thStyle: React.CSSProperties = {
-  padding: "10px 12px", fontSize: 11, fontWeight: 600, color: "#7c8798",
-  textTransform: "uppercase", textAlign: "left", borderBottom: "1px solid #232e42",
-  whiteSpace: "nowrap",
-};
-
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -83,15 +72,8 @@ function Cobranca() {
     ? invoices.filter((a) => a.nome.toLowerCase().includes(searchTerm.toLowerCase()))
     : invoices;
 
-  const inputSearchStyle: React.CSSProperties = {
-    height: 38, padding: "0 14px", background: "#121a29",
-    border: "1px solid #232e42", borderRadius: 8, color: "#e5e7eb",
-    fontSize: 13, fontFamily: "inherit", outline: "none", width: 320, maxWidth: "100%",
-    boxSizing: "border-box",
-  };
-
   return (
-    <div>
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
       <input
         ref={fileInputRef}
         type="file"
@@ -100,82 +82,85 @@ function Cobranca() {
         style={{ display: "none" }}
       />
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 500 }}>Cobrança</h2>
-          {!loading && (
-            <div style={{ fontSize: 13, color: "#7c8798", marginTop: 4 }}>
-              {invoices.length} fatura(s) vencida(s)
-            </div>
-          )}
+          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Painel de Cobranças</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
+            {!loading ? `${invoices.length} fatura(s) vencida(s) no sistema.` : "Carregando faturas..."}
+          </p>
         </div>
         <input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar por nome..."
-          style={inputSearchStyle}
+          placeholder="Buscar por aluno..."
+          className="vmd-input"
+          style={{ width: 320, maxWidth: "100%" }}
         />
       </div>
 
-      {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+      {error && (
+        <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 16 }}>
+          <span>⚠️ {error}</span>
+        </div>
+      )}
 
       {loading ? (
-        <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
-          Carregando...
+        <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+          Carregando lista de inadimplentes...
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
-          {searchTerm ? "Nenhuma fatura encontrada." : "Nenhuma fatura vencida."}
+        <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+          {searchTerm ? "Nenhuma fatura encontrada para esta busca." : "Parabéns! Não existem faturas em atraso."}
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+        <div className="vmd-table-container">
+          <table className="vmd-table">
             <thead>
               <tr>
-                <th style={thStyle}>Aluno</th>
-                <th style={thStyle}>Plano</th>
-                <th style={thStyle}>Valor</th>
-                <th style={thStyle}>Vencimento</th>
-                <th style={thStyle}>Dias</th>
-                <th style={thStyle}>Total Aberto</th>
-                <th style={thStyle}></th>
+                <th>Aluno</th>
+                <th>Plano</th>
+                <th>Valor Fatura</th>
+                <th>Vencimento</th>
+                <th>Atraso</th>
+                <th>Total em Aberto</th>
+                <th style={{ textAlign: "right" }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((f) => (
                 <tr key={f.invoice_id}>
-                  <td style={tdStyle}>
-                    <div style={{ fontWeight: 500, fontSize: 13 }}>{f.nome}</div>
-                    <div style={{ color: "#7c8798", fontSize: 11 }}>{f.cpf}</div>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{f.nome}</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: 11 }}>CPF: {f.cpf}</div>
                   </td>
-                  <td style={tdStyle}>{f.plano_nome}</td>
-                  <td style={tdStyle}>
+                  <td>{f.plano_nome}</td>
+                  <td>
                     <div>{formatCents(f.valor_devido)}</div>
-                    <div style={{ color: "#7c8798", fontSize: 11 }}>{formatCents(f.plano_preco)}/mês</div>
+                    <div style={{ color: "var(--text-dim)", fontSize: 11 }}>{formatCents(f.plano_preco)}/mês</div>
                   </td>
-                  <td style={tdStyle}>{formatDate(f.data_vencimento)}</td>
-                  <td style={tdStyle}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 500,
-                      color: f.dias_vencido > 5 ? "#f87171" : f.dias_vencido > 0 ? "#fbbf24" : "#5eead4",
-                      background: f.dias_vencido > 5 ? "#f8717122" : f.dias_vencido > 0 ? "#fbbf2422" : "#5eead422",
-                    }}>
-                      {f.dias_vencido}d
+                  <td>{formatDate(f.data_vencimento)}</td>
+                  <td>
+                    <span
+                      className={`vmd-badge ${
+                        f.dias_vencido > 15
+                          ? "vmd-badge-danger"
+                          : f.dias_vencido > 0
+                          ? "vmd-badge-warning"
+                          : "vmd-badge-secondary"
+                      }`}
+                    >
+                      {f.dias_vencido} dias
                     </span>
                   </td>
-                  <td style={tdStyle}>{formatCents(f.total_em_aberto)}</td>
-                  <td style={tdStyle}>
+                  <td style={{ fontWeight: 700, color: "var(--danger)" }}>{formatCents(f.total_em_aberto)}</td>
+                  <td style={{ textAlign: "right" }}>
                     <button
                       onClick={() => handleUpload(f.invoice_id)}
                       disabled={uploadingId === f.invoice_id}
-                      style={{
-                        padding: "4px 10px", border: "1px solid #5eead4", borderRadius: 6,
-                        background: "transparent", color: "#5eead4", fontSize: 11,
-                        fontFamily: "inherit", cursor: "pointer",
-                        opacity: uploadingId === f.invoice_id ? 0.5 : 1,
-                      }}
+                      className="vmd-btn vmd-btn-success"
+                      style={{ padding: "5px 10px", height: 28, fontSize: 11 }}
                     >
-                      {uploadingId === f.invoice_id ? "Enviando..." : "Upload PDF"}
+                      {uploadingId === f.invoice_id ? "Enviando..." : "📤 Comprovante PDF"}
                     </button>
                   </td>
                 </tr>
@@ -185,15 +170,7 @@ function Cobranca() {
         </div>
       )}
 
-      {!loading && (
-        <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
-          <button onClick={load} style={{
-            padding: "8px 16px", border: "1px solid #232e42", borderRadius: 6,
-            background: "transparent", color: "#a7b0bf", fontSize: 12,
-            fontFamily: "inherit", cursor: "pointer",
-          }}>Atualizar</button>
-        </div>
-      )}
+
     </div>
   );
 }

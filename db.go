@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -66,6 +67,7 @@ func seedData(db *gorm.DB) {
 	seedAlunosTeste(db)
 	seedInadimplentesTeste(db)
 	seedAnualPlan(db)
+	seedRegistroAcessos(db)
 }
 
 func cleanTestData(db *gorm.DB) {
@@ -73,6 +75,14 @@ func cleanTestData(db *gorm.DB) {
 	db.Exec("DELETE FROM student_plans WHERE student_id IN (SELECT id FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%')")
 	db.Exec("DELETE FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%'")
 	db.Exec("DELETE FROM plans WHERE name LIKE '%Teste%' OR name LIKE '%Eduardo%'")
+}
+
+func hashPassword(password string) string {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("Falha ao hashear senha de seed: %v", err)
+	}
+	return string(hashed)
 }
 
 func seedSuperAdmin(db *gorm.DB) {
@@ -84,7 +94,7 @@ func seedSuperAdmin(db *gorm.DB) {
 	db.Create(&User{
 		Name:  "Admin Supremo",
 		Email: "admin@catraca.com",
-		Senha: "admin123",
+		Senha: hashPassword("admin123"),
 		Cargo: "super_admin",
 	})
 }
@@ -101,7 +111,7 @@ func seedTestUsers(db *gorm.DB) {
 	db.Create(&User{
 		Name:          "Admin Teste",
 		Email:         "admin_teste@catraca.com",
-		Senha:         "admin123",
+		Senha:         hashPassword("admin123"),
 		Cargo:         "admin",
 		RegistradorID: &superAdmin.ID,
 	})
@@ -294,4 +304,42 @@ func timePtr(t time.Time) *time.Time {
 
 func intPtr(n int) *int {
 	return &n
+}
+
+func seedRegistroAcessos(db *gorm.DB) {
+	var count int64
+	db.Model(&RegistroAcesso{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	var alunos []Aluno
+	db.Limit(5).Find(&alunos)
+	if len(alunos) == 0 {
+		return
+	}
+
+	// Criar acessos dos últimos 30 dias para cobrir mensal/semanal
+	now := time.Now()
+	for i := 29; i >= 0; i-- {
+		day := now.AddDate(0, 0, -i)
+		
+		// Criar de 5 a 12 entradas por dia
+		numEntradas := 5 + (i % 8)
+		for j := 0; j < numEntradas; j++ {
+			aluno := alunos[j%len(alunos)]
+			liberado := j%4 != 0 // simula algumas negadas (25% de taxa de erro)
+			motivo := "Acesso Liberado"
+			if !liberado {
+				motivo = "Plano Vencido"
+			}
+			
+			db.Create(&RegistroAcesso{
+				AlunoID:  aluno.ID,
+				DataHora: day.Add(time.Duration(j+8) * time.Hour), // distribui ao longo do dia
+				Liberado: liberado,
+				Motivo:   motivo,
+			})
+		}
+	}
 }

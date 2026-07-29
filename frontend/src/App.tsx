@@ -11,6 +11,7 @@ import Planos from "./pages/Planos";
 import MetodosPagamento from "./pages/MetodosPagamento";
 import Financeiro from "./pages/Financeiro";
 import Cobranca from "./pages/Cobranca";
+import Acesso from "./pages/Acesso";
 
 interface User {
   id: number;
@@ -18,6 +19,7 @@ interface User {
   email: string;
   cargo: string;
   ativo: boolean;
+  permissoes: string;
   criado_em: string;
 }
 
@@ -50,6 +52,8 @@ function App() {
             return <Cobranca />;
           case "logs":
             return <Logs />;
+          case "acesso":
+            return <Acesso />;
         }
       }}
     </Dashboard>

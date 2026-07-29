@@ -59,12 +59,12 @@ const statusLabels: Record<string, string> = {
   refunded: "Reembolsado",
 };
 
-const statusColors: Record<string, string> = {
-  pending: "#fbbf24",
-  paid: "#5eead4",
-  overdue: "#f87171",
-  cancelled: "#7c8798",
-  refunded: "#60a5fa",
+const statusBadgeClasses: Record<string, string> = {
+  pending: "vmd-badge vmd-badge-warning",
+  paid: "vmd-badge vmd-badge-success",
+  overdue: "vmd-badge vmd-badge-danger",
+  cancelled: "vmd-badge vmd-badge-secondary",
+  refunded: "vmd-badge vmd-badge-secondary",
 };
 
 function Financeiro({ user }: FinanceiroProps) {
@@ -115,87 +115,111 @@ function Financeiro({ user }: FinanceiroProps) {
   const activePlans = studentPlans.filter((sp) => sp.status === "active");
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: 500 }}>Financeiro</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setTab("invoices")} style={{
-            padding: "7px 14px", border: "none", borderRadius: 6,
-            background: tab === "invoices" ? "#5eead4" : "#121a29",
-            color: tab === "invoices" ? "#053b32" : "#a7b0bf",
-            fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-          }}>Faturas</button>
-          {canManage && (
-            <button onClick={() => setTab("plans")} style={{
-              padding: "7px 14px", border: "none", borderRadius: 6,
-              background: tab === "plans" ? "#5eead4" : "#121a29",
-              color: tab === "plans" ? "#053b32" : "#a7b0bf",
-              fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-            }}>Planos dos Alunos</button>
-          )}
-        </div>
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Gestão Financeira</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
+          Gerenciamento de cobranças, faturas e planos dos alunos matriculados.
+        </p>
       </div>
 
-      {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+      <div className="vmd-tabs">
+        <button
+          onClick={() => setTab("invoices")}
+          className={`vmd-tab-btn ${tab === "invoices" ? "active" : ""}`}
+        >
+          Faturas Emitidas
+        </button>
+        {canManage && (
+          <button
+            onClick={() => setTab("plans")}
+            className={`vmd-tab-btn ${tab === "plans" ? "active" : ""}`}
+          >
+            Assinaturas Ativas
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 20 }}>
+          <span>⚠️ {error}</span>
+        </div>
+      )}
 
       {tab === "invoices" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {invoices.map((inv) => (
-            <div key={inv.id} style={{
-              background: "#121a29", border: "1px solid #232e42", borderRadius: 8,
-              padding: "14px 18px", display: "flex", alignItems: "center",
-              justifyContent: "space-between", gap: 12,
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{inv.student_name}</div>
-                <div style={{ fontSize: 12, color: "#7c8798" }}>
-                  {inv.plan_name} · {formatCents(inv.amount_cents)} · Venc: {inv.due_date}
+            <div
+              key={inv.id}
+              className="vmd-card"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 16,
+                padding: "16px 20px",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-main)" }}>
+                  {inv.student_name}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                  Plano: <strong style={{ color: "var(--text-main)" }}>{inv.plan_name}</strong> · Valor: {formatCents(inv.amount_cents)} · Vencimento: {inv.due_date}
                 </div>
                 {inv.paid_at && (
-                  <div style={{ fontSize: 12, color: "#5eead4" }}>
-                    Pago em {formatDate(inv.paid_at)} {inv.payment_method_name && `via ${inv.payment_method_name}`}
+                  <div style={{ fontSize: 12, color: "var(--success)", fontWeight: 500, marginTop: 4 }}>
+                    ✓ Pago em {formatDate(inv.paid_at)} {inv.payment_method_name && `via ${inv.payment_method_name}`}
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{
-                  padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 500,
-                  background: (statusColors[inv.status] || "#7c8798") + "22",
-                  color: statusColors[inv.status] || "#7c8798",
-                }}>
+              
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <span className={statusBadgeClasses[inv.status] || "vmd-badge"}>
                   {statusLabels[inv.status] || inv.status}
                 </span>
+
                 {canManage && inv.status === "pending" && (
                   <>
-                    <button onClick={() => confirmPayment(inv)} style={{
-                      padding: "6px 12px", border: "none", borderRadius: 6,
-                      background: "#5eead4", color: "#053b32", fontSize: 12,
-                      fontFamily: "inherit", cursor: "pointer",
-                    }}>Confirmar</button>
-                    <button onClick={() => cancelInvoice(inv)} style={{
-                      padding: "6px 12px", border: "1px solid #f87171", borderRadius: 6,
-                      background: "transparent", color: "#f87171", fontSize: 12,
-                      fontFamily: "inherit", cursor: "pointer",
-                    }}>Cancelar</button>
-                    <button onClick={() => deleteInvoice(inv)} style={{
-                      padding: "6px 12px", border: "1px solid #f87171", borderRadius: 6,
-                      background: "#f8717122", color: "#f87171", fontSize: 12,
-                      fontFamily: "inherit", cursor: "pointer",
-                    }}>Excluir</button>
+                    <button
+                      onClick={() => confirmPayment(inv)}
+                      className="vmd-btn vmd-btn-success"
+                      style={{ padding: "6px 12px", height: 32, fontSize: 11 }}
+                    >
+                      Confirmar Pago
+                    </button>
+                    <button
+                      onClick={() => cancelInvoice(inv)}
+                      className="vmd-btn vmd-btn-secondary"
+                      style={{ padding: "6px 12px", height: 32, fontSize: 11 }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => deleteInvoice(inv)}
+                      className="vmd-btn vmd-btn-danger"
+                      style={{ padding: "6px 12px", height: 32, fontSize: 11, background: "transparent" }}
+                    >
+                      Excluir
+                    </button>
                   </>
                 )}
+
                 {canManage && inv.status !== "pending" && (
-                  <button onClick={() => deleteInvoice(inv)} style={{
-                    padding: "6px 12px", border: "1px solid #f87171", borderRadius: 6,
-                    background: "#f8717122", color: "#f87171", fontSize: 12,
-                    fontFamily: "inherit", cursor: "pointer",
-                  }}>Excluir</button>
+                  <button
+                    onClick={() => deleteInvoice(inv)}
+                    className="vmd-btn vmd-btn-danger"
+                    style={{ padding: "6px 12px", height: 32, fontSize: 11, background: "transparent" }}
+                  >
+                    Excluir
+                  </button>
                 )}
               </div>
             </div>
           ))}
           {invoices.length === 0 && (
-            <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
+            <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
               Nenhuma fatura encontrada.
             </div>
           )}
@@ -203,24 +227,36 @@ function Financeiro({ user }: FinanceiroProps) {
       )}
 
       {tab === "plans" && canManage && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {activePlans.map((sp) => (
-            <div key={sp.id} style={{
-              background: "#121a29", border: "1px solid #232e42", borderRadius: 8,
-              padding: "14px 18px", display: "flex", alignItems: "center",
-              justifyContent: "space-between", gap: 12,
-            }}>
+            <div
+              key={sp.id}
+              className="vmd-card"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px",
+              }}
+            >
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{sp.student_name}</div>
-                <div style={{ fontSize: 12, color: "#7c8798" }}>
-                  {sp.plan_name} · {formatCents(sp.plan_price_cents)} · {sp.status}
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-main)" }}>
+                  {sp.student_name}
                 </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                  Plano: <strong style={{ color: "var(--text-main)" }}>{sp.plan_name}</strong> · Mensalidade: {formatCents(sp.plan_price_cents)}
+                </div>
+              </div>
+              <div>
+                <span className="vmd-badge vmd-badge-success">
+                  {sp.status === "active" ? "Regular" : sp.status}
+                </span>
               </div>
             </div>
           ))}
           {activePlans.length === 0 && (
-            <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
-              Nenhum plano de aluno ativo.
+            <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+              Nenhum plano ativo de aluno registrado.
             </div>
           )}
         </div>

@@ -62,6 +62,7 @@ type User struct {
 	RegistradorID *uint     `json:"registrador_id"`
 	Ativo         bool      `gorm:"default:true" json:"ativo"`
 	Foto          *string   `gorm:"size:500000" json:"foto"`
+	Permissoes    string    `gorm:"size:1000;default:'home,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios,logs'" json:"permissoes"`
 	CriadoEm      time.Time `gorm:"autoCreateTime" json:"criado_em"`
 }
 

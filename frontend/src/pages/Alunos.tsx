@@ -52,20 +52,6 @@ interface AlunosProps {
   user: { cargo: string };
 }
 
-const inputStyle: React.CSSProperties = {
-  height: 34, padding: "0 10px", background: "#121a29",
-  border: "1px solid #232e42", borderRadius: 6, color: "#e5e7eb",
-  fontSize: 12, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box",
-};
-
-const inputDateStyle: React.CSSProperties = {
-  ...inputStyle, colorScheme: "dark",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11, color: "#a7b0bf", marginBottom: 6,
-};
-
 function maskCPF(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
   return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4")
@@ -84,11 +70,11 @@ function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-const statusColors: Record<string, string> = {
-  pending: "#fbbf24",
-  paid: "#5eead4",
-  overdue: "#f87171",
-  cancelled: "#7c8798",
+const statusBadgeClasses: Record<string, string> = {
+  pending: "vmd-badge vmd-badge-warning",
+  paid: "vmd-badge vmd-badge-success",
+  overdue: "vmd-badge vmd-badge-danger",
+  cancelled: "vmd-badge vmd-badge-secondary",
 };
 
 const statusLabels: Record<string, string> = {
@@ -202,125 +188,139 @@ function Alunos({ user }: AlunosProps) {
   }
 
   return (
-    <div>
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 500 }}>Alunos</h2>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Gestão de Alunos</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
+            Visualize, edite e ative matrículas de alunos e seus planos.
+          </p>
+        </div>
         {canManage && (
-          <button onClick={openCreate} style={{
-            padding: "8px 16px", background: "#5eead4", color: "#053b32",
-            border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500,
-            fontFamily: "inherit", cursor: "pointer",
-          }}>Novo Aluno</button>
+          <button onClick={openCreate} className="vmd-btn vmd-btn-primary">
+            ➕ Novo Aluno
+          </button>
         )}
       </div>
 
-      {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+      {error && (
+        <div className="vmd-alert vmd-alert-danger" style={{ maxWidth: 600 }}>
+          <span>⚠️ {error}</span>
+        </div>
+      )}
       {feedback && (
-        <div style={{
-          padding: "10px 16px", borderRadius: 6, marginBottom: 12, fontSize: 13,
-          background: feedback.type === "success" ? "#5eead422" : "#f8717122",
-          color: feedback.type === "success" ? "#5eead4" : "#f87171",
-          border: `1px solid ${feedback.type === "success" ? "#5eead4" : "#f87171"}`,
-        }}>{feedback.msg}</div>
+        <div className={`vmd-alert ${feedback.type === "success" ? "vmd-alert-success" : "vmd-alert-danger"}`} style={{ maxWidth: 600 }}>
+          <span>{feedback.type === "success" ? "✨" : "⚠️"} {feedback.msg}</span>
+        </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 20 }}>
         <input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar aluno por nome..."
-          style={{
-            height: 38, padding: "0 14px", background: "#121a29",
-            border: "1px solid #232e42", borderRadius: 8, color: "#e5e7eb",
-            fontSize: 13, fontFamily: "inherit", outline: "none", width: 320, maxWidth: "100%",
-            boxSizing: "border-box",
-          }}
+          className="vmd-input"
+          style={{ width: 320, maxWidth: "100%" }}
         />
         {searchTerm && (
-          <span style={{ fontSize: 12, color: "#7c8798", marginLeft: 12 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 12 }}>
             {filteredStudents.length} de {students.length} aluno(s)
           </span>
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {filteredStudents.map((s) => (
-          <div key={s.id} style={{
-            background: "#121a29", border: "1px solid #232e42", borderRadius: 8,
-            padding: "14px 18px", opacity: s.ativo ? 1 : 0.5,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{s.nome}</div>
-                <div style={{ fontSize: 12, color: "#7c8798", marginTop: 2 }}>
+          <div
+            key={s.id}
+            className="vmd-card"
+            style={{
+              padding: "16px 20px",
+              opacity: s.ativo ? 1 : 0.6,
+              background: s.ativo ? "var(--bg-card)" : "rgba(255,255,255,0.01)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>
+                  {s.nome}
+                  <span className={`vmd-badge ${s.ativo ? "vmd-badge-success" : "vmd-badge-danger"}`}>
+                    {s.ativo ? "Ativo" : "Inativo"}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   CPF: {s.cpf} {s.data_nascimento ? `· Nasc: ${formatDate(s.data_nascimento)}` : ""}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                <span style={{
-                  padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 500,
-                  background: s.ativo ? "#5eead422" : "#f8717122",
-                  color: s.ativo ? "#5eead4" : "#f87171",
-                }}>{s.ativo ? "ativo" : "inativo"}</span>
+              
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 {canManage && (
                   <>
-                    <button onClick={() => openEdit(s)} style={{
-                      padding: "6px 12px", border: "1px solid #60a5fa", borderRadius: 6,
-                      background: "transparent", color: "#60a5fa", fontSize: 12,
-                      fontFamily: "inherit", cursor: "pointer",
-                    }}>Editar</button>
-                    <button onClick={() => toggleAtivo(s)} style={{
-                      padding: "6px 12px", border: "1px solid #232e42", borderRadius: 6,
-                      background: "transparent", color: s.ativo ? "#f87171" : "#5eead4",
-                      fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-                    }}>{s.ativo ? "Desativar" : "Ativar"}</button>
+                    <button onClick={() => openEdit(s)} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 12px", height: 32 }}>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => toggleAtivo(s)}
+                      className={`vmd-btn ${s.ativo ? "vmd-btn-danger" : "vmd-btn-success"}`}
+                      style={{ padding: "6px 12px", height: 32 }}
+                    >
+                      {s.ativo ? "Desativar" : "Ativar"}
+                    </button>
                   </>
                 )}
               </div>
             </div>
 
             {s.plano_nome && (
-              <div style={{
-                marginTop: 10, display: "flex", gap: 20, flexWrap: "wrap",
-                padding: "8px 12px", background: "#0e1420", borderRadius: 6,
-              }}>
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: 16,
+                  padding: "12px 16px",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "var(--radius-sm)",
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: 10, color: "#7c8798", textTransform: "uppercase" }}>Plano</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, marginTop: 2 }}>
-                    {s.plano_nome}
-                    {s.plano_preco ? ` (${formatCents(s.plano_preco)})` : ""}
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 600 }}>Plano</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, marginTop: 2, color: "var(--text-main)" }}>
+                    {s.plano_nome} {s.plano_preco ? `(${formatCents(s.plano_preco)})` : ""}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: "#7c8798", textTransform: "uppercase" }}>Forma de Pagamento</div>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>{s.payment_method || "—"}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 600 }}>Pagamento</div>
+                  <div style={{ fontSize: 13, marginTop: 2, color: "var(--text-main)" }}>{s.payment_method || "—"}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: "#7c8798", textTransform: "uppercase" }}>Vencimento</div>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>Dia {s.due_day || "—"}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 600 }}>Vencimento</div>
+                  <div style={{ fontSize: 13, marginTop: 2, color: "var(--text-main)" }}>Dia {s.due_day || "—"}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: "#7c8798", textTransform: "uppercase" }}>Status do Plano</div>
-                  <div style={{
-                    fontSize: 13, marginTop: 2,
-                    color: s.plano_status === "active" ? "#5eead4" :
-                           s.plano_status === "overdue" ? "#f87171" : "#7c8798",
-                  }}>
-                    {s.plano_status === "active" ? "Ativo" :
-                     s.plano_status === "overdue" ? "Inadimplente" :
-                     s.plano_status === "suspended" ? "Suspenso" : s.plano_status || "—"}
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 600 }}>Status do Plano</div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginTop: 2,
+                      fontWeight: 600,
+                      color: s.plano_status === "active" ? "var(--success)" :
+                             s.plano_status === "overdue" ? "var(--danger)" : "var(--text-muted)",
+                    }}
+                  >
+                    {s.plano_status === "active" ? "● Regular" :
+                     s.plano_status === "overdue" ? "● Atrasado" :
+                     s.plano_status === "suspended" ? "● Suspenso" : s.plano_status || "—"}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: "#7c8798", textTransform: "uppercase" }}>Última Fatura</div>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", fontWeight: 600 }}>Última Fatura</div>
+                  <div style={{ fontSize: 12, marginTop: 2 }}>
                     {s.ultima_fatura ? (
-                      <span style={{
-                        color: statusColors[s.ultima_fatura] || "#7c8798",
-                      }}>
+                      <span className={statusBadgeClasses[s.ultima_fatura] || "vmd-badge"}>
                         {statusLabels[s.ultima_fatura] || s.ultima_fatura}
-                        {s.fatura_valor ? ` · ${formatCents(s.fatura_valor)}` : ""}
-                        {s.fatura_vencimento ? ` · ${s.fatura_vencimento}` : ""}
+                        {s.fatura_valor ? ` (${formatCents(s.fatura_valor)})` : ""}
                       </span>
                     ) : "Nenhuma"}
                   </div>
@@ -328,122 +328,152 @@ function Alunos({ user }: AlunosProps) {
               </div>
             )}
 
-            {canManage && s.student_plan_id && loadingInvoice !== s.student_plan_id && (
-              <div style={{ marginTop: 10, textAlign: "right" }}>
-                <button onClick={() => handleRegistrarPagamento(s.student_plan_id!)} style={{
-                  padding: "6px 14px", border: "1px solid #5eead4", borderRadius: 6,
-                  background: "transparent", color: "#5eead4", fontSize: 12,
-                  fontFamily: "inherit", cursor: "pointer",
-                }}>Registrar Pagamento</button>
-              </div>
-            )}
-            {canManage && s.student_plan_id && loadingInvoice === s.student_plan_id && (
-              <div style={{ marginTop: 10, textAlign: "right", color: "#7c8798", fontSize: 12 }}>
-                Gerando fatura...
+            {canManage && s.student_plan_id && (
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                {loadingInvoice !== s.student_plan_id ? (
+                  <button
+                    onClick={() => handleRegistrarPagamento(s.student_plan_id!)}
+                    className="vmd-btn vmd-btn-success"
+                    style={{ padding: "6px 12px", height: 30, fontSize: 11 }}
+                  >
+                    💸 Registrar Novo Pagamento
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Gerando fatura...</span>
+                )}
               </div>
             )}
           </div>
         ))}
         {filteredStudents.length === 0 && (
-          <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
+          <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
             {searchTerm ? "Nenhum aluno encontrado para esta busca." : "Nenhum aluno cadastrado."}
           </div>
         )}
       </div>
 
       {showModal && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-        }} onClick={() => setShowModal(false)}>
-          <div style={{
-            background: "#121a29", border: "1px solid #232e42", borderRadius: 12,
-            padding: 28, width: 520, maxWidth: "90vw", maxHeight: "90vh", overflow: "auto",
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 500 }}>
-              {editId ? "Editar Aluno" : "Novo Aluno"}
-            </h3>
+        <div className="vmd-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="vmd-modal-content" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
+            <div className="vmd-modal-header">
+              <h3 style={{ fontSize: 16, margin: 0 }}>{editId ? "Editar Cadastro de Aluno" : "Matricular Novo Aluno"}</h3>
+              <button onClick={() => setShowModal(false)} className="vmd-btn vmd-btn-ghost" style={{ padding: 4, minWidth: "auto" }}>
+                ✕
+              </button>
+            </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <div style={labelStyle}>Nome completo</div>
-                <input value={nome} onChange={(e) => setNome(e.target.value)}
-                  placeholder="Nome do aluno" style={inputStyle} />
-              </div>
+            <div className="vmd-modal-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">Nome Completo</label>
+                  <input
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Nome completo do aluno"
+                    className="vmd-input"
+                  />
+                </div>
 
-              <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>CPF</div>
-                  <input value={cpf} onChange={(e) => setCpf(maskCPF(e.target.value))}
-                    placeholder="000.000.000-00" maxLength={14} style={inputStyle} />
+                <div className="vmd-grid-2">
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">CPF</label>
+                    <input
+                      value={cpf}
+                      onChange={(e) => setCpf(maskCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      className="vmd-input"
+                    />
+                  </div>
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">Data de Nascimento</label>
+                    <input
+                      type="date"
+                      value={dataNasc}
+                      onChange={(e) => setDataNasc(e.target.value)}
+                      className="vmd-input"
+                      style={{ colorScheme: "dark" }}
+                    />
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Data de nascimento</div>
-                  <input type="date" value={dataNasc} onChange={(e) => setDataNasc(e.target.value)}
-                    style={inputDateStyle} />
-                </div>
-              </div>
 
-              <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Telefone</div>
-                  <input value={telefone} onChange={(e) => setTelefone(maskTel(e.target.value))}
-                    placeholder="(00) 00000-0000" maxLength={15} style={inputStyle} />
+                <div className="vmd-grid-2">
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">Telefone / WhatsApp</label>
+                    <input
+                      value={telefone}
+                      onChange={(e) => setTelefone(maskTel(e.target.value))}
+                      placeholder="(00) 90000-0000"
+                      maxLength={15}
+                      className="vmd-input"
+                    />
+                  </div>
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">E-mail</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="aluno@exemplo.com"
+                      className="vmd-input"
+                    />
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>E-mail</div>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="aluno@email.com" style={inputStyle} />
-                </div>
-              </div>
 
-              <div style={{ borderTop: "1px solid #232e42", margin: "8px 0" }} />
+                <div style={{ borderTop: "1px solid var(--border-color)", margin: "8px 0" }} />
 
-              <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Plano</div>
-                  <select value={planId} onChange={(e) => setPlanId(Number(e.target.value))}
-                    style={{ ...inputStyle, cursor: "pointer" }}>
-                    <option value={0}>Sem plano</option>
-                    {plans.map((pl) => (
-                      <option key={pl.id} value={pl.id}>
-                        {pl.name} — {formatCents(pl.price_cents)}
-                      </option>
-                    ))}
-                  </select>
+                <div className="vmd-grid-2">
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">Plano</label>
+                    <select
+                      value={planId}
+                      onChange={(e) => setPlanId(Number(e.target.value))}
+                      className="vmd-select"
+                    >
+                      <option value={0}>Sem plano ativo</option>
+                      {plans.map((pl) => (
+                        <option key={pl.id} value={pl.id}>
+                          {pl.name} — {formatCents(pl.price_cents)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">Forma de Pagamento</label>
+                    <select
+                      value={formaPagamentoId}
+                      onChange={(e) => setFormaPagamentoId(Number(e.target.value))}
+                      className="vmd-select"
+                    >
+                      <option value={0}>Selecione...</option>
+                      {methods.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Forma de Pagamento</div>
-                  <select value={formaPagamentoId} onChange={(e) => setFormaPagamentoId(Number(e.target.value))}
-                    style={{ ...inputStyle, cursor: "pointer" }}>
-                    <option value={0}>Selecione...</option>
-                    {methods.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div style={{ width: 120 }}>
-                <div style={labelStyle}>Dia de Vencimento</div>
-                <input type="number" min={1} max={28} value={dueDay}
-                  onChange={(e) => setDueDay(Number(e.target.value))}
-                  style={inputStyle} />
+                <div className="vmd-form-group" style={{ marginBottom: 0, width: "50%" }}>
+                  <label className="vmd-label">Dia do Vencimento Mensal</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={28}
+                    value={dueDay}
+                    onChange={(e) => setDueDay(Number(e.target.value))}
+                    className="vmd-input"
+                  />
+                </div>
               </div>
             </div>
 
-            {error && <div style={{ color: "#f87171", fontSize: 12, marginTop: 12 }}>{error}</div>}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
-              <button onClick={() => setShowModal(false)} style={{
-                padding: "8px 16px", border: "1px solid #232e42", borderRadius: 6,
-                background: "transparent", color: "#7c8798", fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-              }}>Cancelar</button>
-              <button onClick={handleSave} style={{
-                padding: "8px 16px", border: "none", borderRadius: 6,
-                background: "#5eead4", color: "#053b32", fontSize: 12, fontWeight: 500,
-                fontFamily: "inherit", cursor: "pointer",
-              }}>{editId ? "Salvar" : "Criar Aluno"}</button>
+            <div className="vmd-modal-footer">
+              <button onClick={() => setShowModal(false)} className="vmd-btn vmd-btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleSave} className="vmd-btn vmd-btn-primary">
+                {editId ? "Salvar Alterações" : "Efetivar Matrícula"}
+              </button>
             </div>
           </div>
         </div>

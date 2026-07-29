@@ -100,6 +100,12 @@ export function Login(arg1:string,arg2:string):Promise<main.User>;
 
 export function MeuPerfil():Promise<main.User>;
 
+export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEstatistica>>;
+
+export function ObterMetricasHome():Promise<main.MetricasHome>;
+
 export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
+
+export function SalvarPermissoesUsuario(arg1:number,arg2:string):Promise<void>;
 
 export function VerificarAcessoAluno(arg1:number):Promise<main.ResultadoAcesso>;

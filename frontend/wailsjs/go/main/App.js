@@ -198,8 +198,20 @@ export function MeuPerfil() {
   return window['go']['main']['App']['MeuPerfil']();
 }
 
+export function ObterEstatisticasAcesso(arg1) {
+  return window['go']['main']['App']['ObterEstatisticasAcesso'](arg1);
+}
+
+export function ObterMetricasHome() {
+  return window['go']['main']['App']['ObterMetricasHome']();
+}
+
 export function SalvarComprovante(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
+}
+
+export function SalvarPermissoesUsuario(arg1, arg2) {
+  return window['go']['main']['App']['SalvarPermissoesUsuario'](arg1, arg2);
 }
 
 export function VerificarAcessoAluno(arg1) {

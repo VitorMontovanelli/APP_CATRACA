@@ -17,7 +17,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "catraca-app",
+		Title:  "CatracaVMD",
 		Width:  800,
 		Height: 600,
 		AssetServer: &assetserver.Options{

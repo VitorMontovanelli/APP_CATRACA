@@ -10,13 +10,6 @@ interface Resultado {
   mensagem: string;
 }
 
-const inputStyle: React.CSSProperties = {
-  height: 40, padding: "0 14px", background: "#121a29",
-  border: "1px solid #232e42", borderRadius: 8, color: "#e5e7eb",
-  fontSize: 14, fontFamily: "inherit", outline: "none", width: "100%",
-  boxSizing: "border-box",
-};
-
 function Catraca() {
   const [biometria, setBiometria] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -32,7 +25,10 @@ function Catraca() {
     setError("");
     setResultado(null);
     const id = Number(biometria);
-    if (!id) { setError("Digite um ID de biometria válido"); return; }
+    if (!id) {
+      setError("Digite um ID de biometria válido");
+      return;
+    }
     setLoading(true);
     try {
       const r = await VerificarAcessoAluno(id);
@@ -53,143 +49,191 @@ function Catraca() {
     try {
       await CadastrarAluno(cadNome, cadCpf, cadDias, Number(cadBio));
       setShowCadastro(false);
-      setCadNome(""); setCadCpf(""); setCadDias(30); setCadBio("");
-      setError("Aluno cadastrado com sucesso!");
-      setTimeout(() => setError(""), 3000);
+      setCadNome("");
+      setCadCpf("");
+      setCadDias(30);
+      setCadBio("");
+      setError("Aluno cadastrado na catraca com sucesso!");
+      setTimeout(() => setError(""), 4000);
     } catch (e) {
       setError(String(e));
     }
   }
 
   return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: 20, fontWeight: 500 }}>
-        Catraca Virtual
-      </h2>
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Catraca Virtual</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
+          Simulador de controle de acesso biométrico físico.
+        </p>
+      </div>
 
       {error && (
-        <div style={{
-          padding: "10px 16px", borderRadius: 6, marginBottom: 16, fontSize: 13,
-          background: error.includes("sucesso") ? "#5eead422" : "#f8717122",
-          color: error.includes("sucesso") ? "#5eead4" : "#f87171",
-          border: `1px solid ${error.includes("sucesso") ? "#5eead4" : "#f87171"}`,
-        }}>{error}</div>
+        <div
+          className={`vmd-alert ${
+            error.includes("sucesso") ? "vmd-alert-success" : "vmd-alert-danger"
+          }`}
+          style={{ maxWidth: 480 }}
+        >
+          <span>{error.includes("sucesso") ? "✨" : "⚠️"} {error}</span>
+        </div>
       )}
 
-      <div style={{
-        background: "#121a29", border: "1px solid #232e42", borderRadius: 12,
-        padding: 24, marginBottom: 16, maxWidth: 480,
-      }}>
-        <div style={{ fontSize: 13, color: "#a7b0bf", marginBottom: 8 }}>
-          Simular leitura da digital
+      <div className="vmd-card" style={{ maxWidth: 480, marginBottom: 24 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)", marginBottom: 12 }}>
+          Simular Leitura da Digital
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <input
             value={biometria}
             onChange={(e) => setBiometria(e.target.value)}
             placeholder="ID da Biometria (ex: 1001)"
-            style={inputStyle}
+            className="vmd-input"
             onKeyDown={(e) => e.key === "Enter" && verificar()}
           />
-          <button onClick={verificar} disabled={loading} style={{
-            padding: "10px 20px", border: "none", borderRadius: 8,
-            background: "#5eead4", color: "#053b32", fontSize: 13,
-            fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-            whiteSpace: "nowrap", opacity: loading ? 0.6 : 1,
-          }}>
+          <button
+            onClick={verificar}
+            disabled={loading}
+            className="vmd-btn vmd-btn-primary"
+          >
             {loading ? "Verificando..." : "Verificar"}
           </button>
         </div>
       </div>
 
       {resultado && (
-        <div style={{
-          background: resultado.liberado ? "#0a2e2a" : "#2e0a0a",
-          border: `2px solid ${resultado.liberado ? "#5eead4" : "#f87171"}`,
-          borderRadius: 12, padding: 28, maxWidth: 480,
-          textAlign: "center",
-        }}>
-          <div style={{
-            fontSize: 48, marginBottom: 8,
-          }}>{resultado.liberado ? "✅" : "⛔"}</div>
-          <div style={{
-            fontSize: 22, fontWeight: 600, marginBottom: 4,
-            color: resultado.liberado ? "#5eead4" : "#f87171",
-          }}>
-            {resultado.liberado ? "ACESSO LIBERADO" : "ACESSO NEGADO"}
+        <div
+          className="vmd-card"
+          style={{
+            maxWidth: 480,
+            textAlign: "center",
+            padding: "36px 24px",
+            border: `2px solid ${resultado.liberado ? "var(--success)" : "var(--danger)"}`,
+            background: resultado.liberado
+              ? "radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 100%)"
+              : "radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 100%)",
+          }}
+        >
+          <div style={{ fontSize: 54, marginBottom: 16 }}>
+            {resultado.liberado ? "🔓" : "🔒"}
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "0.5px",
+              marginBottom: 8,
+              color: resultado.liberado ? "var(--success)" : "var(--danger)",
+            }}
+          >
+            {resultado.liberado ? "ACESSO PERMITIDO" : "ACESSO BLOQUEADO"}
           </div>
           {resultado.nome && (
-            <div style={{ fontSize: 16, color: "#e5e7eb", marginBottom: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-main)", marginBottom: 6 }}>
               {resultado.nome}
             </div>
           )}
-          <div style={{
-            fontSize: 14, color: "#a7b0bf", marginTop: 4,
-          }}>{resultado.mensagem}</div>
+          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            {resultado.mensagem}
+          </div>
         </div>
       )}
 
-      <div style={{ marginTop: 24 }}>
-        <button onClick={() => setShowCadastro(true)} style={{
-          padding: "8px 16px", border: "1px solid #60a5fa", borderRadius: 8,
-          background: "transparent", color: "#60a5fa", fontSize: 13,
-          fontFamily: "inherit", cursor: "pointer",
-        }}>+ Cadastrar Aluno na Catraca</button>
-      </div>
+      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div>
+          <button
+            onClick={() => setShowCadastro(true)}
+            className="vmd-btn vmd-btn-secondary"
+          >
+            ➕ Cadastrar Aluno Direto na Catraca
+          </button>
+        </div>
 
-      <div style={{ marginTop: 24, fontSize: 12, color: "#7c8798" }}>
-        <strong>Alunos de teste:</strong> 1001 (Carlos - ativo), 1002 (Maria - ativo), 1003 (João - vencido), 9999 (inexistente)
+        <div className="vmd-card" style={{ maxWidth: 480, padding: 16, background: "rgba(255,255,255,0.01)" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
+            IDs de Teste Rápidos
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
+            • <strong style={{ color: "var(--success)" }}>1001</strong>: Carlos (Acesso Liberado)<br />
+            • <strong style={{ color: "var(--success)" }}>1002</strong>: Maria (Acesso Liberado)<br />
+            • <strong style={{ color: "var(--danger)" }}>1003</strong>: João (Acesso Negado / Vencido)<br />
+            • <strong style={{ color: "var(--text-dim)" }}>9999</strong>: Biometria não encontrada
+          </div>
+        </div>
       </div>
 
       {showCadastro && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-        }} onClick={() => setShowCadastro(false)}>
-          <div style={{
-            background: "#121a29", border: "1px solid #232e42", borderRadius: 12,
-            padding: 28, width: 400, maxWidth: "90vw",
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 500 }}>
-              Cadastrar Aluno na Catraca
-            </h3>
+        <div className="vmd-modal-overlay" onClick={() => setShowCadastro(false)}>
+          <div className="vmd-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="vmd-modal-header">
+              <h3 style={{ fontSize: 16, margin: 0 }}>Cadastrar Aluno na Catraca</h3>
+              <button
+                onClick={() => setShowCadastro(false)}
+                className="vmd-btn vmd-btn-ghost"
+                style={{ padding: 4, minWidth: "auto" }}
+              >
+                ✕
+              </button>
+            </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "#a7b0bf", marginBottom: 6 }}>Nome</div>
-                <input value={cadNome} onChange={(e) => setCadNome(e.target.value)}
-                  placeholder="Nome do aluno" style={inputStyle} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#a7b0bf", marginBottom: 6 }}>CPF</div>
-                <input value={cadCpf} onChange={(e) => setCadCpf(e.target.value)}
-                  placeholder="000.000.000-00" style={inputStyle} />
-              </div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: "#a7b0bf", marginBottom: 6 }}>Dias de validade</div>
-                  <input type="number" min={1} value={cadDias}
-                    onChange={(e) => setCadDias(Number(e.target.value))} style={inputStyle} />
+            <div className="vmd-modal-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">Nome Completo</label>
+                  <input
+                    value={cadNome}
+                    onChange={(e) => setCadNome(e.target.value)}
+                    placeholder="Ex: Pedro Silva"
+                    className="vmd-input"
+                  />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: "#a7b0bf", marginBottom: 6 }}>ID Biometria</div>
-                  <input type="number" value={cadBio}
-                    onChange={(e) => setCadBio(e.target.value)} style={inputStyle} />
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">CPF</label>
+                  <input
+                    value={cadCpf}
+                    onChange={(e) => setCadCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="vmd-input"
+                  />
+                </div>
+                <div className="vmd-grid-2">
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">Validade (dias)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={cadDias}
+                      onChange={(e) => setCadDias(Number(e.target.value))}
+                      className="vmd-input"
+                    />
+                  </div>
+                  <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                    <label className="vmd-label">ID Biometria</label>
+                    <input
+                      type="number"
+                      value={cadBio}
+                      onChange={(e) => setCadBio(e.target.value)}
+                      className="vmd-input"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
-              <button onClick={() => setShowCadastro(false)} style={{
-                padding: "8px 16px", border: "1px solid #232e42", borderRadius: 6,
-                background: "transparent", color: "#7c8798", fontSize: 12,
-                fontFamily: "inherit", cursor: "pointer",
-              }}>Cancelar</button>
-              <button onClick={handleCadastro} style={{
-                padding: "8px 16px", border: "none", borderRadius: 6,
-                background: "#5eead4", color: "#053b32", fontSize: 12,
-                fontWeight: 500, fontFamily: "inherit", cursor: "pointer",
-              }}>Cadastrar</button>
+            <div className="vmd-modal-footer">
+              <button
+                onClick={() => setShowCadastro(false)}
+                className="vmd-btn vmd-btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCadastro}
+                className="vmd-btn vmd-btn-primary"
+              >
+                Cadastrar Aluno
+              </button>
             </div>
           </div>
         </div>

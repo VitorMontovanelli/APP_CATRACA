@@ -62,64 +62,79 @@ function Login({ onSuccess }: LoginProps) {
       setIsLoading(false);
     }
   }
-
   return (
     <div className="login-page">
+      <div className="login-backdrop-glow"></div>
+      
       <header className="topbar">
-        <FingerprintIcon />
-        <span className="topbar-title">AcessoID</span>
+        <div className="topbar-brand">
+          <div className="brand-glow-icon">
+            <FingerprintIcon />
+          </div>
+          <span className="topbar-title">CatracaVMD</span>
+        </div>
       </header>
 
       <main className="login-content">
-        <div className="login-card">
-          <h1 className="login-card-title">Entrar no painel</h1>
-          <p className="login-card-subtitle">
-            Use suas credenciais de administrador.
-          </p>
+        <div className="vmd-card login-card">
+          <div className="login-header">
+            <div className="login-logo-circle">
+              <FingerprintIcon />
+            </div>
+            <h1 className="login-card-title">Acesso Restrito</h1>
+            <p className="login-card-subtitle">
+              Entre com suas credenciais de administrador.
+            </p>
+          </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
-            <label className="login-label" htmlFor="email">
-              E-mail
-            </label>
-            <input
-              id="email"
-              className="login-input"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <div className="vmd-form-group">
+              <label className="vmd-label" htmlFor="email">
+                E-mail
+              </label>
+              <input
+                id="email"
+                className="vmd-input"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-            <label className="login-label" htmlFor="password">
-              Senha
-            </label>
-            <input
-              id="password"
-              className="login-input"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="vmd-form-group">
+              <label className="vmd-label" htmlFor="password">
+                Senha
+              </label>
+              <input
+                id="password"
+                className="vmd-input"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
 
             {errorMessage && (
-              <p className="login-error">{errorMessage}</p>
+              <div className="vmd-alert vmd-alert-danger">
+                <span>⚠️ {errorMessage}</span>
+              </div>
             )}
 
             <button
-              className="login-button"
+              className="vmd-btn vmd-btn-primary login-submit-btn"
               type="submit"
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? "Autenticando..." : "Entrar no Painel"}
             </button>
           </form>
         </div>
       </main>
     </div>
-  );
-}
+  );}
 
 export default Login;

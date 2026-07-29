@@ -19,34 +19,34 @@ interface AuditLog {
 }
 
 const actionLabels: Record<string, string> = {
-  login: "Login",
-  cadastrou_aluno_catraca: "Cadastrou aluno (catraca)",
-  criou_aluno: "Criou aluno",
-  editou_aluno: "Editou aluno",
+  login: "Login no sistema",
+  cadastrou_aluno_catraca: "Cadastro de aluno (catraca)",
+  criou_aluno: "Criou novo aluno",
+  editou_aluno: "Editou dados do aluno",
   ativou_aluno: "Ativou aluno",
   desativou_aluno: "Desativou aluno",
-  criou_usuario: "Criou usuário",
-  editou_usuario: "Editou usuário",
-  ativou_usuario: "Ativou usuário",
-  desativou_usuario: "Desativou usuário",
-  deletou_usuario: "Deletou usuário",
+  criou_usuario: "Criou usuário adm",
+  editou_usuario: "Editou usuário adm",
+  ativou_usuario: "Ativou usuário adm",
+  desativou_usuario: "Desativou usuário adm",
+  deletou_usuario: "Excluiu usuário adm",
   alterou_senha: "Alterou senha",
-  alterou_foto: "Alterou foto",
-  criou_plano: "Criou plano",
+  alterou_foto: "Alterou foto de perfil",
+  criou_plano: "Criou novo plano",
   editou_plano: "Editou plano",
   ativou_plano: "Ativou plano",
   desativou_plano: "Desativou plano",
-  criou_metodo_pagamento: "Criou método de pagamento",
-  ativou_metodo_pagamento: "Ativou método de pagamento",
-  desativou_metodo_pagamento: "Desativou método de pagamento",
-  criou_plano_aluno: "Criou plano de aluno",
+  criou_metodo_pagamento: "Criou método pagamento",
+  ativou_metodo_pagamento: "Ativou método pagamento",
+  desativou_metodo_pagamento: "Desativou método pagamento",
+  criou_plano_aluno: "Vinculou plano ao aluno",
   cancelou_plano_aluno: "Cancelou plano de aluno",
-  gerou_fatura: "Gerou fatura",
-  confirmou_pagamento: "Confirmou pagamento",
+  gerou_fatura: "Emitiu fatura",
+  confirmou_pagamento: "Confirmou pagamento de fatura",
   cancelou_fatura: "Cancelou fatura",
-  ativou_gateway: "Ativou gateway",
-  desativou_gateway: "Desativou gateway",
-  configurou_gateway: "Configurou gateway",
+  ativou_gateway: "Ativou gateway de pagamento",
+  desativou_gateway: "Desativou gateway de pagamento",
+  configurou_gateway: "Configurou parâmetros do gateway",
 };
 
 function Logs() {
@@ -64,89 +64,125 @@ function Logs() {
       .catch((e) => setError(String(e)));
   }, []);
 
-  const resultColor: Record<string, string> = {
-    liberado: "#5eead4",
-    negado: "#f87171",
+  const resultBadgeClasses: Record<string, string> = {
+    liberado: "vmd-badge vmd-badge-success",
+    negado: "vmd-badge vmd-badge-danger",
   };
 
   return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: 20, fontWeight: 500 }}>Logs</h2>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <button onClick={() => setTab("acesso")} style={{
-          padding: "7px 14px", border: "none", borderRadius: 6,
-          background: tab === "acesso" ? "#5eead4" : "#121a29",
-          color: tab === "acesso" ? "#053b32" : "#a7b0bf",
-          fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-        }}>Acesso à Catraca</button>
-        <button onClick={() => setTab("auditoria")} style={{
-          padding: "7px 14px", border: "none", borderRadius: 6,
-          background: tab === "auditoria" ? "#5eead4" : "#121a29",
-          color: tab === "auditoria" ? "#053b32" : "#a7b0bf",
-          fontSize: 12, fontFamily: "inherit", cursor: "pointer",
-        }}>Auditoria</button>
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Histórico e Auditoria</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
+          Histórico de acessos à catraca e logs de auditoria das ações administrativas.
+        </p>
       </div>
 
-      {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+      <div className="vmd-tabs">
+        <button
+          onClick={() => setTab("acesso")}
+          className={`vmd-tab-btn ${tab === "acesso" ? "active" : ""}`}
+        >
+          Acessos à Catraca
+        </button>
+        <button
+          onClick={() => setTab("auditoria")}
+          className={`vmd-tab-btn ${tab === "auditoria" ? "active" : ""}`}
+        >
+          Ações de Auditoria
+        </button>
+      </div>
+
+      {error && (
+        <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 16 }}>
+          <span>⚠️ {error}</span>
+        </div>
+      )}
 
       {tab === "acesso" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {accessLogs.map((l) => (
-            <div key={l.id} style={{
-              background: "#121a29", border: "1px solid #232e42", borderRadius: 8,
-              padding: "12px 16px", display: "flex", alignItems: "center",
-              justifyContent: "space-between", fontSize: 13,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ color: "#7c8798", fontSize: 12 }}>{l.timestamp}</span>
-                {l.motivo && <span style={{ color: "#a7b0bf" }}>{l.motivo}</span>}
+            <div
+              key={l.id}
+              className="vmd-card"
+              style={{
+                padding: "12px 18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <span style={{ color: "var(--text-dim)", fontSize: 12, fontFamily: "monospace" }}>
+                  {l.timestamp}
+                </span>
+                {l.motivo && <span style={{ color: "var(--text-main)", fontWeight: 500 }}>{l.motivo}</span>}
               </div>
-              <span style={{
-                padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 500,
-                background: (resultColor[l.resultado] || "#7c8798") + "22",
-                color: resultColor[l.resultado] || "#7c8798",
-              }}>{l.resultado}</span>
+              <span className={resultBadgeClasses[l.resultado] || "vmd-badge"}>
+                {l.resultado === "liberado" ? "Liberado" : "Bloqueado"}
+              </span>
             </div>
           ))}
           {accessLogs.length === 0 && (
-            <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
-              Nenhum log de acesso registrado.
+            <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+              Nenhum log de acesso à catraca registrado.
             </div>
           )}
         </div>
       )}
 
       {tab === "auditoria" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {auditLogs.map((l) => (
-            <div key={l.id} style={{
-              background: "#121a29", border: "1px solid #232e42", borderRadius: 8,
-              padding: "12px 16px", fontSize: 13,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#7c8798", fontSize: 12 }}>{l.timestamp}</span>
-                  <span style={{
-                    padding: "2px 8px", borderRadius: 4, fontSize: 11,
-                    background: "#60a5fa22", color: "#60a5fa",
-                  }}>#{l.actor_id}</span>
-                  <span style={{ color: "#e5e7eb" }}>{actionLabels[l.action] || l.action}</span>
+            <div
+              key={l.id}
+              className="vmd-card"
+              style={{
+                padding: "14px 18px",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ color: "var(--text-dim)", fontSize: 12, fontFamily: "monospace" }}>
+                    {l.timestamp}
+                  </span>
+                  <span className="vmd-badge vmd-badge-secondary" style={{ fontFamily: "monospace" }}>
+                    ID Actor #{l.actor_id}
+                  </span>
+                  <span style={{ color: "var(--text-main)", fontWeight: 600 }}>
+                    {actionLabels[l.action] || l.action}
+                  </span>
                 </div>
                 {l.target_id && (
-                  <span style={{ color: "#7c8798", fontSize: 11 }}>target: {l.target_id}</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                    Alvo ID: #{l.target_id}
+                  </span>
                 )}
               </div>
               {l.details && (
-                <div style={{ color: "#7c8798", fontSize: 11, marginTop: 4, fontFamily: "monospace" }}>
+                <div
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: 11,
+                    marginTop: 6,
+                    fontFamily: "monospace",
+                    background: "rgba(0,0,0,0.2)",
+                    padding: "8px 12px",
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--border-color)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {l.details}
                 </div>
               )}
             </div>
           ))}
           {auditLogs.length === 0 && (
-            <div style={{ color: "#7c8798", fontSize: 13, textAlign: "center", padding: 40 }}>
-              Nenhum log de auditoria registrado.
+            <div className="vmd-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+              Nenhum log de auditoria administrativa registrado.
             </div>
           )}
         </div>
