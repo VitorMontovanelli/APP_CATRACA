@@ -44,12 +44,6 @@ wails build
 
 > **Nota:** Em máquinas com política de Controle de Aplicativo (WDAC), `wailsbuildings.exe` pode ser bloqueado. Use `wails build -skipbindings` como alternativa (as bindings já estão geradas em `frontend/wailsjs/`).
 
-## Credencial padrão
-
-| Email              | Senha    | Cargo       |
-|--------------------|----------|-------------|
-| admin@catraca.com  | admin123 | super_admin |
-
 ## Estrutura do projeto
 
 ```
