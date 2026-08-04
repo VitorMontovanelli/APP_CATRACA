@@ -55,7 +55,7 @@ function Home() {
       setLoadingChart(true);
       try {
         const data = await ObterEstatisticasAcesso(filter);
-        setAccessData(data as unknown as AcessoEstatistica[]);
+        setAccessData((data as unknown as AcessoEstatistica[]) || []);
       } catch (e) {
         console.error("Erro ao carregar estatísticas do gráfico", e);
       } finally {

@@ -50,7 +50,7 @@ function Usuarios({ user }: UsuariosProps) {
   async function load() {
     try {
       const list = await ListarUsuarios();
-      setUsers(list as unknown as User[]);
+      setUsers((list as unknown as User[]) || []);
     } catch (e) {
       setError(String(e));
     }

@@ -46,7 +46,7 @@ function Acesso() {
       setLoading(true);
       const list = await ListarUsuarios();
       // Filter only "admin" cargo, super_admins have absolute permission and cannot be limited
-      const admins = (list as unknown as User[]).filter((u) => u.cargo === "admin");
+      const admins = ((list as unknown as User[]) || []).filter((u) => u.cargo === "admin");
       setUsers(admins);
       if (admins.length > 0) {
         selectUser(admins[0]);

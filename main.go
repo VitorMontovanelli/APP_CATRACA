@@ -26,6 +26,9 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			app.startup(ctx)
 		},
+		OnShutdown: func(ctx context.Context) {
+			app.onShutdown()
+		},
 		Bind: []interface{}{
 			app,
 		},

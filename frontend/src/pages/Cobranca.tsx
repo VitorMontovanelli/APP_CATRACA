@@ -26,7 +26,7 @@ function Cobranca() {
     setLoading(true);
     try {
       const data = await ListarInadimplentes();
-      setInvoices(data as unknown as main.InadimplenteReport[]);
+      setInvoices((data as unknown as main.InadimplenteReport[]) || []);
     } catch (e) {
       setError(String(e));
     } finally {

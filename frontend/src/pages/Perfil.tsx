@@ -13,9 +13,10 @@ interface PerfilProps {
   user: User;
   show: boolean;
   onClose: () => void;
+  onFotoUpdate?: (foto: string) => void;
 }
 
-function PerfilModal({ user, show, onClose }: PerfilProps) {
+function PerfilModal({ user, show, onClose, onFotoUpdate }: PerfilProps) {
   const [profile, setProfile] = useState<User>(user);
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -40,6 +41,7 @@ function PerfilModal({ user, show, onClose }: PerfilProps) {
         const base64 = reader.result as string;
         await AlterarFoto(base64);
         setProfile((prev) => prev ? { ...prev, foto: base64 } : prev);
+        if (onFotoUpdate) onFotoUpdate(base64);
         mostrarMsg("Foto atualizada com sucesso!", "success");
       } catch (err) {
         mostrarMsg(String(err), "error");

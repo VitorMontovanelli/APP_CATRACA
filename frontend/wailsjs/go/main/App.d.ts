@@ -68,6 +68,8 @@ export function DeletarPlano(arg1:number):Promise<void>;
 
 export function DeletarUsuario(arg1:number):Promise<void>;
 
+export function EnviarBackupTelegram():Promise<string>;
+
 export function GerarInvoice(arg1:number):Promise<main.Invoice>;
 
 export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
@@ -100,12 +102,18 @@ export function Login(arg1:string,arg2:string):Promise<main.User>;
 
 export function MeuPerfil():Promise<main.User>;
 
+export function ObterConfigTelegram():Promise<main.BackupConfig>;
+
 export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEstatistica>>;
 
 export function ObterMetricasHome():Promise<main.MetricasHome>;
 
 export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
 
+export function SalvarConfigTelegram(arg1:string,arg2:string,arg3:boolean):Promise<void>;
+
 export function SalvarPermissoesUsuario(arg1:number,arg2:string):Promise<void>;
+
+export function TestarTelegram():Promise<void>;
 
 export function VerificarAcessoAluno(arg1:number):Promise<main.ResultadoAcesso>;

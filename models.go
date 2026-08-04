@@ -184,6 +184,21 @@ type AuditLog struct {
 	Timestamp time.Time `gorm:"autoCreateTime" json:"timestamp"`
 }
 
+// ==== Configurações & Backup Telegram ====
+
+type Setting struct {
+	Key   string `gorm:"primaryKey;size:100" json:"key"`
+	Value string `gorm:"size:2000" json:"value"`
+}
+
+type BackupConfig struct {
+	Token      string `json:"token"`
+	ChatID     string `json:"chat_id"`
+	AutoBackup bool   `json:"auto_backup"`
+	LastBackup string `json:"last_backup"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
 // BeforeCreate hook para alunos da catraca: gera vencimento padrão (30 dias) se não definido
 func (a *Aluno) BeforeCreate(tx *gorm.DB) error {
 	if a.VencimentoPlano.IsZero() {

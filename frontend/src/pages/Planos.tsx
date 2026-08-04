@@ -63,7 +63,7 @@ function Planos({ user }: PlanosProps) {
   async function load() {
     try {
       const list = await ListarPlanos();
-      setPlans(list as unknown as Plan[]);
+      setPlans((list as unknown as Plan[]) || []);
     } catch (e) {
       setError(String(e));
     }

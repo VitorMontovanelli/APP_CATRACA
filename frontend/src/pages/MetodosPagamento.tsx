@@ -65,8 +65,8 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
         ListarPaymentMethods(),
         ListarPaymentGateways(),
       ]);
-      setMethods(m as unknown as PaymentMethod[]);
-      setGateways(g as unknown as PaymentGateway[]);
+      setMethods((m as unknown as PaymentMethod[]) || []);
+      setGateways((g as unknown as PaymentGateway[]) || []);
     } catch (e) { setError(String(e)); }
   }
 

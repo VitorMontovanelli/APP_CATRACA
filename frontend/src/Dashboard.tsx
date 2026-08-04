@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PerfilModal from "./pages/Perfil";
+import NotificationBell from "./components/NotificationBell";
 import "./Dashboard.css";
 
 interface User {
@@ -7,14 +8,16 @@ interface User {
   name: string;
   email: string;
   cargo: string;
+  foto?: string;
   permissoes?: string;
 }
 
-type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "catraca" | "cobranca" | "acesso";
+type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "catraca" | "cobranca" | "acesso" | "backup";
 
 interface DashboardProps {
   user: User;
   onLogout: () => void;
+  onFotoUpdate?: (foto: string) => void;
   children: (page: Page) => React.ReactNode;
 }
 
@@ -59,6 +62,7 @@ const navGroups: NavGroup[] = [
       { page: "usuarios", label: "Usuários", icon: "👥", minCargo: "admin" },
       { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "admin" },
       { page: "acesso", label: "Acessos", icon: "🔑", minCargo: "super_admin" },
+      { page: "backup", label: "Backup Telegram", icon: "☁️", minCargo: "super_admin" },
     ],
   },
 ];
@@ -68,7 +72,7 @@ const cargoLevel: Record<string, number> = {
   admin: 2,
 };
 
-function Dashboard({ user, onLogout, children }: DashboardProps) {
+function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
   const userLevel = cargoLevel[user.cargo] || 0;
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [showPerfil, setShowPerfil] = useState(false);
@@ -96,7 +100,8 @@ function Dashboard({ user, onLogout, children }: DashboardProps) {
 
   return (
     <div className="dashboard">
-      <PerfilModal user={user} show={showPerfil} onClose={() => setShowPerfil(false)} />
+      <PerfilModal user={user} show={showPerfil} onClose={() => setShowPerfil(false)} onFotoUpdate={onFotoUpdate} />
+      <NotificationBell />
 
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -107,7 +112,11 @@ function Dashboard({ user, onLogout, children }: DashboardProps) {
             className="sidebar-user-btn"
           >
             <div className="sidebar-user-avatar">
-              {user.name.charAt(0).toUpperCase()}
+              {user.foto ? (
+                <img src={user.foto} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                user.name.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user.name}</span>

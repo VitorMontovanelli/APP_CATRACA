@@ -116,6 +116,26 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class BackupConfig {
+	    token: string;
+	    chat_id: string;
+	    auto_backup: boolean;
+	    last_backup: string;
+	    updated_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.token = source["token"];
+	        this.chat_id = source["chat_id"];
+	        this.auto_backup = source["auto_backup"];
+	        this.last_backup = source["last_backup"];
+	        this.updated_at = source["updated_at"];
+	    }
+	}
 	export class CobrancaFatura {
 	    id: number;
 	    amount_cents: number;

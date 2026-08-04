@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/glebarez/sqlite"
 	"golang.org/x/crypto/bcrypt"
@@ -35,6 +34,7 @@ func initDB() *gorm.DB {
 		&Invoice{},
 		&AccessLog{},
 		&AuditLog{},
+		&Setting{},
 	)
 	if err != nil {
 		log.Fatalf("Falha ao migrar banco de dados: %v", err)
@@ -60,21 +60,9 @@ func initDB() *gorm.DB {
 }
 
 func seedData(db *gorm.DB) {
-	cleanTestData(db)
 	seedSuperAdmin(db)
-	seedTestUsers(db)
 	seedPaymentData(db)
-	seedAlunosTeste(db)
-	seedInadimplentesTeste(db)
 	seedAnualPlan(db)
-	seedRegistroAcessos(db)
-}
-
-func cleanTestData(db *gorm.DB) {
-	db.Exec("DELETE FROM invoices WHERE student_id IN (SELECT id FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%')")
-	db.Exec("DELETE FROM student_plans WHERE student_id IN (SELECT id FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%')")
-	db.Exec("DELETE FROM students WHERE nome LIKE '%Teste%' OR nome LIKE '%Eduardo%'")
-	db.Exec("DELETE FROM plans WHERE name LIKE '%Teste%' OR name LIKE '%Eduardo%'")
 }
 
 func hashPassword(password string) string {
@@ -94,65 +82,9 @@ func seedSuperAdmin(db *gorm.DB) {
 	db.Create(&User{
 		Name:  "Admin Supremo",
 		Email: "admin@catraca.com",
-		Senha: hashPassword("admin123"),
+		Senha: hashPassword("LLI81o9wtVn$cD%CsmuLZvhxL"),
 		Cargo: "super_admin",
 	})
-}
-
-func seedTestUsers(db *gorm.DB) {
-	var count int64
-	db.Model(&User{}).Where("email = ?", "admin_teste@catraca.com").Count(&count)
-	if count > 0 {
-		return
-	}
-	var superAdmin User
-	db.Where("cargo = ?", "super_admin").First(&superAdmin)
-
-	db.Create(&User{
-		Name:          "Admin Teste",
-		Email:         "admin_teste@catraca.com",
-		Senha:         hashPassword("admin123"),
-		Cargo:         "admin",
-		RegistradorID: &superAdmin.ID,
-	})
-}
-
-func seedAlunosTeste(db *gorm.DB) {
-	var count int64
-	db.Model(&Aluno{}).Count(&count)
-	if count > 0 {
-		return
-	}
-
-	db.Create(&Aluno{
-		Nome:            "Carlos Aluno",
-		CPF:             "111.222.333-44",
-		Status:          true,
-		VencimentoPlano: time.Now().AddDate(0, 1, 0),
-		IDBiometriaMock: 1001,
-	})
-	db.Create(&Aluno{
-		Nome:            "Maria Atleta",
-		CPF:             "555.666.777-88",
-		Status:          true,
-		VencimentoPlano: time.Now().AddDate(0, 2, 0),
-		IDBiometriaMock: 1002,
-	})
-	db.Create(&Aluno{
-		Nome:            "João Vencido",
-		CPF:             "999.888.777-66",
-		Status:          true,
-		VencimentoPlano: time.Now().AddDate(0, -1, 0),
-		IDBiometriaMock: 1003,
-	})
-
-	// Students legado
-	var sCount int64
-	db.Model(&Student{}).Count(&sCount)
-	if sCount == 0 {
-		db.Create(&Student{Nome: "Aluno Teste", CPF: "111.222.333-45"})
-		db.Create(&Student{Nome: "Maria Silva", CPF: "555.666.777-89"})
-	}
 }
 
 func seedPaymentData(db *gorm.DB) {
@@ -192,100 +124,6 @@ func seedPaymentData(db *gorm.DB) {
 	}
 }
 
-func seedInadimplentesTeste(db *gorm.DB) {
-	var count int64
-	db.Model(&StudentPlan{}).Count(&count)
-	if count > 0 {
-		return
-	}
-
-	var students []Student
-	db.Find(&students)
-	var plans []Plan
-	db.Find(&plans)
-	if len(students) < 2 || len(plans) == 0 {
-		return
-	}
-
-	now := time.Now()
-
-	// Aluno 1 — 2 dias vencido (amarelo)
-	sp1 := StudentPlan{
-		StudentID: students[0].ID,
-		PlanID:    plans[0].ID,
-		DueDay:    5,
-		Status:    "active",
-		StartDate: now.AddDate(0, -2, 0),
-	}
-	db.Create(&sp1)
-	db.Create(&Invoice{
-		StudentPlanID: sp1.ID,
-		StudentID:     students[0].ID,
-		PlanID:        plans[0].ID,
-		AmountCents:   plans[0].PriceCents,
-		Status:        "pending",
-		DueDate:       now.AddDate(0, 0, -2).Format("2006-01-02"),
-	})
-
-	// Aluno 1 — fatura paga anterior (histórico de pagamento)
-	db.Create(&Invoice{
-		StudentPlanID: sp1.ID,
-		StudentID:     students[0].ID,
-		PlanID:        plans[0].ID,
-		AmountCents:   plans[0].PriceCents,
-		Status:        "paid",
-		DueDate:       now.AddDate(0, -1, -2).Format("2006-01-02"),
-		PaidAt:        timePtr(now.AddDate(0, -1, 0)),
-		PaidAmountCents: intPtr(plans[0].PriceCents),
-	})
-
-	// Aluno 2 — 10 dias vencido (vermelho), plano trimestral
-	var plan2 Plan
-	if len(plans) > 1 {
-		plan2 = plans[1]
-	} else {
-		plan2 = plans[0]
-	}
-	sp2 := StudentPlan{
-		StudentID: students[1].ID,
-		PlanID:    plan2.ID,
-		DueDay:    10,
-		Status:    "active",
-		StartDate: now.AddDate(0, -3, 0),
-	}
-	db.Create(&sp2)
-	db.Create(&Invoice{
-		StudentPlanID: sp2.ID,
-		StudentID:     students[1].ID,
-		PlanID:        plan2.ID,
-		AmountCents:   plan2.PriceCents,
-		Status:        "pending",
-		DueDate:       now.AddDate(0, 0, -10).Format("2006-01-02"),
-	})
-
-	// Aluno 2 — segunda fatura pendente (total em aberto maior)
-	db.Create(&Invoice{
-		StudentPlanID: sp2.ID,
-		StudentID:     students[1].ID,
-		PlanID:        plan2.ID,
-		AmountCents:   plan2.PriceCents,
-		Status:        "overdue",
-		DueDate:       now.AddDate(0, -1, -10).Format("2006-01-02"),
-	})
-
-	// Aluno 2 — pagamento antigo
-	db.Create(&Invoice{
-		StudentPlanID: sp2.ID,
-		StudentID:     students[1].ID,
-		PlanID:        plan2.ID,
-		AmountCents:   plan2.PriceCents,
-		Status:        "paid",
-		DueDate:       now.AddDate(0, -2, -10).Format("2006-01-02"),
-		PaidAt:        timePtr(now.AddDate(0, -2, -5)),
-		PaidAmountCents: intPtr(plan2.PriceCents),
-	})
-}
-
 func seedAnualPlan(db *gorm.DB) {
 	var count int64
 	db.Model(&Plan{}).Where("name = ?", "Anual").Count(&count)
@@ -296,50 +134,4 @@ func seedAnualPlan(db *gorm.DB) {
 		Name: "Anual", Description: "12 meses com 20% de desconto",
 		DurationDays: 365, PriceCents: 119900, GracePeriodDays: 5, Active: true,
 	})
-}
-
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
-func intPtr(n int) *int {
-	return &n
-}
-
-func seedRegistroAcessos(db *gorm.DB) {
-	var count int64
-	db.Model(&RegistroAcesso{}).Count(&count)
-	if count > 0 {
-		return
-	}
-
-	var alunos []Aluno
-	db.Limit(5).Find(&alunos)
-	if len(alunos) == 0 {
-		return
-	}
-
-	// Criar acessos dos últimos 30 dias para cobrir mensal/semanal
-	now := time.Now()
-	for i := 29; i >= 0; i-- {
-		day := now.AddDate(0, 0, -i)
-		
-		// Criar de 5 a 12 entradas por dia
-		numEntradas := 5 + (i % 8)
-		for j := 0; j < numEntradas; j++ {
-			aluno := alunos[j%len(alunos)]
-			liberado := j%4 != 0 // simula algumas negadas (25% de taxa de erro)
-			motivo := "Acesso Liberado"
-			if !liberado {
-				motivo = "Plano Vencido"
-			}
-			
-			db.Create(&RegistroAcesso{
-				AlunoID:  aluno.ID,
-				DataHora: day.Add(time.Duration(j+8) * time.Hour), // distribui ao longo do dia
-				Liberado: liberado,
-				Motivo:   motivo,
-			})
-		}
-	}
 }

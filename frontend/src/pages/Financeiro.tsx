@@ -6,6 +6,7 @@ import {
   CancelarInvoice,
   DeletarInvoice,
 } from "../../wailsjs/go/main/App";
+import { useToast } from "../components/ToastProvider";
 
 interface Invoice {
   id: number;
@@ -72,6 +73,7 @@ function Financeiro({ user }: FinanceiroProps) {
   const [studentPlans, setStudentPlans] = useState<StudentPlan[]>([]);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"invoices" | "plans">("invoices");
+  const { showToast } = useToast();
 
   const canManage = user.cargo === "super_admin" || user.cargo === "admin";
 
@@ -83,8 +85,8 @@ function Financeiro({ user }: FinanceiroProps) {
         ListarInvoices(),
         ListarStudentPlans(),
       ]);
-      setInvoices(inv as unknown as Invoice[]);
-      setStudentPlans(sp as unknown as StudentPlan[]);
+      setInvoices((inv as unknown as Invoice[]) || []);
+      setStudentPlans((sp as unknown as StudentPlan[]) || []);
     } catch (e) { setError(String(e)); }
   }
 
@@ -93,7 +95,18 @@ function Financeiro({ user }: FinanceiroProps) {
     try {
       await ConfirmarPagamento(inv.id, 1, inv.amount_cents);
       await load();
-    } catch (e) { setError(String(e)); }
+      showToast({
+        type: "success",
+        title: "Pagamento registrado",
+        description: `Fatura de ${inv.student_name} confirmada como paga.`,
+      });
+    } catch (e) {
+      showToast({
+        type: "error",
+        title: "Erro ao confirmar pagamento",
+        description: String(e),
+      });
+    }
   }
 
   async function cancelInvoice(inv: Invoice) {
@@ -101,7 +114,18 @@ function Financeiro({ user }: FinanceiroProps) {
     try {
       await CancelarInvoice(inv.id);
       await load();
-    } catch (e) { setError(String(e)); }
+      showToast({
+        type: "warning",
+        title: "Fatura cancelada",
+        description: `A fatura de ${inv.student_name} foi cancelada.`,
+      });
+    } catch (e) {
+      showToast({
+        type: "error",
+        title: "Erro ao cancelar fatura",
+        description: String(e),
+      });
+    }
   }
 
   async function deleteInvoice(inv: Invoice) {
@@ -109,7 +133,18 @@ function Financeiro({ user }: FinanceiroProps) {
     try {
       await DeletarInvoice(inv.id);
       await load();
-    } catch (e) { setError(String(e)); }
+      showToast({
+        type: "success",
+        title: "Fatura excluída",
+        description: `A fatura de ${inv.student_name} foi removida.`,
+      });
+    } catch (e) {
+      showToast({
+        type: "error",
+        title: "Erro ao excluir fatura",
+        description: String(e),
+      });
+    }
   }
 
   const activePlans = studentPlans.filter((sp) => sp.status === "active");

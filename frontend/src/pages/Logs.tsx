@@ -57,10 +57,10 @@ function Logs() {
 
   useEffect(() => {
     ListarAccessLogs()
-      .then((list) => setAccessLogs(list as unknown as AccessLog[]))
+      .then((list) => setAccessLogs((list as unknown as AccessLog[]) || []))
       .catch((e) => setError(String(e)));
     ListarAuditLogs()
-      .then((list) => setAuditLogs(list as unknown as AuditLog[]))
+      .then((list) => setAuditLogs((list as unknown as AuditLog[]) || []))
       .catch((e) => setError(String(e)));
   }, []);
 

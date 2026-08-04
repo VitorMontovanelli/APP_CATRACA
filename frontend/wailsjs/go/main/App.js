@@ -134,6 +134,10 @@ export function DeletarUsuario(arg1) {
   return window['go']['main']['App']['DeletarUsuario'](arg1);
 }
 
+export function EnviarBackupTelegram() {
+  return window['go']['main']['App']['EnviarBackupTelegram']();
+}
+
 export function GerarInvoice(arg1) {
   return window['go']['main']['App']['GerarInvoice'](arg1);
 }
@@ -198,6 +202,10 @@ export function MeuPerfil() {
   return window['go']['main']['App']['MeuPerfil']();
 }
 
+export function ObterConfigTelegram() {
+  return window['go']['main']['App']['ObterConfigTelegram']();
+}
+
 export function ObterEstatisticasAcesso(arg1) {
   return window['go']['main']['App']['ObterEstatisticasAcesso'](arg1);
 }
@@ -210,8 +218,16 @@ export function SalvarComprovante(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
 }
 
+export function SalvarConfigTelegram(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SalvarConfigTelegram'](arg1, arg2, arg3);
+}
+
 export function SalvarPermissoesUsuario(arg1, arg2) {
   return window['go']['main']['App']['SalvarPermissoesUsuario'](arg1, arg2);
+}
+
+export function TestarTelegram() {
+  return window['go']['main']['App']['TestarTelegram']();
 }
 
 export function VerificarAcessoAluno(arg1) {

@@ -1,9 +1,16 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,7 +124,7 @@ func (a *App) VerificarAcessoAluno(idBiometria int) (ResultadoAcesso, error) {
 // =============== Alunos (Students CRUD) ===============
 
 func (a *App) ListarStudents() ([]Student, error) {
-	var list []Student
+	list := []Student{}
 	err := a.db.Order("nome").Find(&list).Error
 	return list, err
 }
@@ -384,7 +391,7 @@ func (a *App) CriarUsuario(name, email, senha, cargo string, registradorID uint)
 }
 
 func (a *App) ListarUsuarios() ([]User, error) {
-	var users []User
+	users := []User{}
 	var err error
 	if a.actorCargo == "super_admin" {
 		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").Order("id").Find(&users).Error
@@ -538,7 +545,7 @@ func (a *App) registrarAuditComDetalhes(action string, targetID uint, details st
 // =============== Planos (CRUD) ===============
 
 func (a *App) ListarPlanos() ([]Plan, error) {
-	var list []Plan
+	list := []Plan{}
 	err := a.db.Order("price_cents").Find(&list).Error
 	return list, err
 }
@@ -629,7 +636,7 @@ func (a *App) ListarAlunosPorPlano(planID uint, page, pageSize int) ([]AlunoPorP
 	var total int64
 	a.db.Model(&StudentPlan{}).Where("plan_id = ?", planID).Count(&total)
 
-	var list []AlunoPorPlano
+	list := []AlunoPorPlano{}
 	err := a.db.Raw(`
 		SELECT s.id, s.nome, s.cpf, sp.status, sp.start_date
 		FROM student_plans sp
@@ -647,7 +654,7 @@ func (a *App) ListarAlunosPorPlano(planID uint, page, pageSize int) ([]AlunoPorP
 // =============== Métodos de Pagamento ===============
 
 func (a *App) ListarPaymentMethods() ([]PaymentMethod, error) {
-	var list []PaymentMethod
+	list := []PaymentMethod{}
 	err := a.db.Order("name").Find(&list).Error
 	return list, err
 }
@@ -951,7 +958,7 @@ func (a *App) DeletarInvoice(invoiceID uint) error {
 // =============== Gateways ===============
 
 func (a *App) ListarPaymentGateways() ([]PaymentGateway, error) {
-	var list []PaymentGateway
+	list := []PaymentGateway{}
 	err := a.db.Order("name").Find(&list).Error
 	return list, err
 }
@@ -1239,15 +1246,258 @@ func (a *App) DeletarDadosTeste() error {
 }
 
 func (a *App) ListarAccessLogs() ([]AccessLog, error) {
-	var logs []AccessLog
+	logs := []AccessLog{}
 	err := a.db.Order("timestamp DESC").Limit(100).Find(&logs).Error
 	return logs, err
 }
 
 func (a *App) ListarAuditLogs() ([]AuditLog, error) {
-	var logs []AuditLog
+	logs := []AuditLog{}
 	err := a.db.Order("timestamp DESC").Limit(200).Find(&logs).Error
 	return logs, err
+}
+
+// =============== Backup Telegram ===============
+
+const (
+	keyTelegramToken = "telegram_token"
+	keyTelegramChat  = "telegram_chat_id"
+	keyTelegramAuto  = "telegram_auto"
+	keyTelegramLast  = "telegram_last_backup"
+)
+
+func (a *App) settingValue(key string) string {
+	var v string
+	a.db.Model(&Setting{}).Where("key = ?", key).Pluck("value", &v)
+	return v
+}
+
+func (a *App) saveSetting(key, value string) {
+	a.db.Exec(
+		"INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+		key, value,
+	)
+}
+
+func (a *App) ObterConfigTelegram() (*BackupConfig, error) {
+	if a.actorCargo != "super_admin" {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	cfg := &BackupConfig{
+		Token:      a.settingValue(keyTelegramToken),
+		ChatID:     a.settingValue(keyTelegramChat),
+		LastBackup: a.settingValue(keyTelegramLast),
+	}
+	cfg.AutoBackup = a.settingValue(keyTelegramAuto) == "1"
+	return cfg, nil
+}
+
+func (a *App) SalvarConfigTelegram(token, chatID string, autoBackup bool) error {
+	if a.actorCargo != "super_admin" {
+		return fmt.Errorf("permissão negada")
+	}
+	token = strings.TrimSpace(token)
+	chatID = strings.TrimSpace(chatID)
+	if token == "" || chatID == "" {
+		return fmt.Errorf("preencha o token do bot e o chat ID")
+	}
+	auto := "0"
+	if autoBackup {
+		auto = "1"
+	}
+	a.saveSetting(keyTelegramToken, token)
+	a.saveSetting(keyTelegramChat, chatID)
+	a.saveSetting(keyTelegramAuto, auto)
+	a.registrarAudit("configurou_backup_telegram", 0)
+	return nil
+}
+
+func (a *App) TestarTelegram() error {
+	if a.actorCargo != "super_admin" {
+		return fmt.Errorf("permissão negada")
+	}
+	token := a.settingValue(keyTelegramToken)
+	chatID := a.settingValue(keyTelegramChat)
+	if token == "" {
+		return fmt.Errorf("token do bot não configurado")
+	}
+	if chatID == "" {
+		return fmt.Errorf("chat ID não configurado")
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	var result struct {
+		Ok          bool   `json:"ok"`
+		Description string `json:"description"`
+	}
+
+	resp, err := client.Get("https://api.telegram.org/bot" + token + "/getMe")
+	if err != nil {
+		return fmt.Errorf("erro ao conectar com o Telegram: %w", err)
+	}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	resp.Body.Close()
+	if err != nil {
+		return fmt.Errorf("resposta inválida do Telegram: %w", err)
+	}
+	if !result.Ok {
+		return fmt.Errorf("token inválido: %s", result.Description)
+	}
+
+	resp, err = client.Get("https://api.telegram.org/bot" + token + "/getChat?chat_id=" + url.QueryEscape(chatID))
+	if err != nil {
+		return fmt.Errorf("erro ao validar o chat: %w", err)
+	}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	resp.Body.Close()
+	if err != nil {
+		return fmt.Errorf("resposta inválida do Telegram: %w", err)
+	}
+	if !result.Ok {
+		return fmt.Errorf("chat ID inválido: %s", result.Description)
+	}
+	return nil
+}
+
+func (a *App) EnviarBackupTelegram() (string, error) {
+	if a.actorCargo != "super_admin" {
+		return "", fmt.Errorf("permissão negada")
+	}
+	return a.enviarBackupTelegram()
+}
+
+func (a *App) enviarBackupTelegram() (string, error) {
+	token := a.settingValue(keyTelegramToken)
+	chatID := a.settingValue(keyTelegramChat)
+	if token == "" || chatID == "" {
+		return "", fmt.Errorf("configure o token do bot e o chat ID antes de enviar o backup")
+	}
+
+	zipPath, err := a.gerarArquivoBackup()
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(filepath.Dir(zipPath))
+
+	caption := fmt.Sprintf("Backup CatracaVMD - %s", time.Now().Format("02/01/2006 15:04"))
+	if err := enviarDocumentoTelegram(token, chatID, zipPath, caption); err != nil {
+		return "", err
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	a.saveSetting(keyTelegramLast, now)
+	a.registrarAudit("enviou_backup_telegram", 0)
+	return now, nil
+}
+
+func (a *App) onShutdown() {
+	if a.db == nil {
+		return
+	}
+	if a.settingValue(keyTelegramAuto) != "1" {
+		return
+	}
+	// Best-effort: envia o backup ao fechar o app se estiver configurado
+	if _, err := a.enviarBackupTelegram(); err != nil {
+		_ = err
+	}
+}
+
+func (a *App) gerarArquivoBackup() (string, error) {
+	tmpDir, err := os.MkdirTemp("", "catraca_backup_*")
+	if err != nil {
+		return "", fmt.Errorf("erro ao criar diretório temporário: %w", err)
+	}
+
+	dbPath := filepath.Join(tmpDir, "catraca.db")
+	escaped := strings.ReplaceAll(dbPath, "'", "''")
+	if err := a.db.Exec("VACUUM INTO '" + escaped + "'").Error; err != nil {
+		return "", fmt.Errorf("erro ao gerar snapshot do banco: %w", err)
+	}
+
+	zipPath := filepath.Join(tmpDir, "catraca_backup_"+time.Now().Format("20060102_150405")+".zip")
+	if err := criarZip(zipPath, dbPath); err != nil {
+		return "", err
+	}
+	return zipPath, nil
+}
+
+func criarZip(zipPath, filePath string) error {
+	zf, err := os.Create(zipPath)
+	if err != nil {
+		return fmt.Errorf("erro ao criar arquivo zip: %w", err)
+	}
+	defer zf.Close()
+
+	zw := zip.NewWriter(zf)
+	defer zw.Close()
+
+	src, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("erro ao abrir snapshot: %w", err)
+	}
+	defer src.Close()
+
+	dst, err := zw.Create(filepath.Base(filePath))
+	if err != nil {
+		return fmt.Errorf("erro ao criar entrada no zip: %w", err)
+	}
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("erro ao compactar snapshot: %w", err)
+	}
+	return nil
+}
+
+func enviarDocumentoTelegram(token, chatID, filePath, caption string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("erro ao abrir backup: %w", err)
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	if err := writer.WriteField("chat_id", chatID); err != nil {
+		return err
+	}
+	if err := writer.WriteField("caption", caption); err != nil {
+		return err
+	}
+	part, err := writer.CreateFormFile("document", filepath.Base(filePath))
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(part, file); err != nil {
+		return err
+	}
+	if err := writer.Close(); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "https://api.telegram.org/bot"+token+"/sendDocument", &buf)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("erro ao enviar backup para o Telegram: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Ok          bool   `json:"ok"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("resposta inválida do Telegram: %w", err)
+	}
+	if !result.Ok {
+		return fmt.Errorf("falha ao enviar backup: %s", result.Description)
+	}
+	return nil
 }
 
 // =============== Utilitários ===============
@@ -1430,7 +1680,13 @@ func (a *App) ObterEstatisticasAcesso(filtro string) ([]AcessoEstatistica, error
 	}
 
 	err := a.db.Raw(query, since).Scan(&list).Error
-	return list, err
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []AcessoEstatistica{}
+	}
+	return list, nil
 }
 
 func (a *App) SalvarPermissoesUsuario(userID uint, permissoes string) error {

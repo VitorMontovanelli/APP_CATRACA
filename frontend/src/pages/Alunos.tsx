@@ -137,9 +137,9 @@ function Alunos({ user }: AlunosProps) {
         ListarPlanos(),
         ListarPaymentMethods(),
       ]);
-      setStudents(s as unknown as StudentComPlano[]);
-      setPlans((p as unknown as Plan[]).filter((pl) => pl.active));
-      setMethods((m as unknown as PaymentMethod[]).filter((pm) => pm.enabled));
+      setStudents((s as unknown as StudentComPlano[]) || []);
+      setPlans(((p as unknown as Plan[]) || []).filter((pl) => pl.active));
+      setMethods(((m as unknown as PaymentMethod[]) || []).filter((pm) => pm.enabled));
     } catch (e) { setError(String(e)); }
   }
 
