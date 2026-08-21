@@ -82,7 +82,7 @@ const statusList = [
 ];
 
 const statusDotColor: Record<string, string> = {
-  ativo: "#5eead4",
+  ativo: "#c79d33",
   inadimplente: "#f87171",
   suspenso: "#7c8798",
 };

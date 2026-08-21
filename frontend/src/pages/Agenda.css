@@ -1,0 +1,270 @@
+/* ===== Agenda Calendário ===== */
+
+.agenda-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.agenda-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agenda-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.agenda-nav-btn:hover {
+  border-color: var(--primary);
+  background: rgba(199, 157, 51, 0.12);
+}
+.agenda-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.agenda-nav-title {
+  min-width: 150px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.2px;
+}
+
+/* Legenda */
+.agenda-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Grade do calendário */
+.agenda-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+}
+.agenda-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  padding-bottom: 8px;
+}
+
+.agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.agenda-day {
+  position: relative;
+  min-height: 84px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  text-align: left;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+}
+.agenda-day:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.agenda-day:disabled {
+  cursor: default;
+  opacity: 0.45;
+  transform: none;
+  box-shadow: none;
+}
+
+.agenda-day.hoje {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.agenda-day.selecionado {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(199, 157, 51, 0.35);
+}
+
+.agenda-day-verde {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+.agenda-day-verde .agenda-day-num {
+  color: #34d399;
+}
+.agenda-day-verde .agenda-day-count {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.agenda-day-laranja {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+.agenda-day-laranja .agenda-day-num {
+  color: #fbbf24;
+}
+.agenda-day-laranja .agenda-day-count {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.agenda-day-vermelho {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.55);
+}
+.agenda-day-vermelho .agenda-day-num {
+  color: #f87171;
+}
+.agenda-day-vermelho .agenda-day-count {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+
+.agenda-day-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.agenda-day-count {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.agenda-vazio {
+  min-height: 84px;
+  border: 1px dashed rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+/* Fila de vagas no modal */
+.agenda-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.agenda-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+.agenda-item-nome {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+.agenda-item-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.agenda-turno-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(199, 157, 51, 0.12);
+  border: 1px solid rgba(199, 157, 51, 0.3);
+  white-space: nowrap;
+}
+
+.agenda-vagas-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.agenda-seg-toggle {
+  display: flex;
+  gap: 6px;
+}
+.agenda-seg-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.agenda-seg-btn:hover {
+  border-color: rgba(199, 157, 51, 0.4);
+}
+.agenda-seg-btn.ativo {
+  background: rgba(199, 157, 51, 0.14);
+  border-color: var(--primary);
+  color: var(--primary);
+}

@@ -38,7 +38,7 @@ const navGroups: NavGroup[] = [
     title: "Principal",
     items: [
       { page: "home", label: "Visão Geral", icon: "📊", minCargo: "admin" },
-      { page: "catraca", label: "Catraca Virtual", icon: "🔑", minCargo: "admin" },
+      { page: "catraca", label: "Agenda Calendário", icon: "📅", minCargo: "admin" },
     ],
   },
   {

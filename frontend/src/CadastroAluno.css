@@ -1,5 +1,5 @@
 .cadastro-page {
-  background-color: #0b1220;
+  background-color: #000000;
   min-height: 100vh;
 }
 
@@ -9,14 +9,14 @@
   align-items: center;
   gap: 8px;
   padding: 0 20px;
-  border-bottom: 1px solid #1c2537;
-  color: #5eead4;
+  border-bottom: 1px solid rgba(199, 157, 51, 0.25);
+  color: #e0bc53;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 10;
-  background-color: #0b1220;
+  background-color: #000000;
 }
 
 .cadastro-topbar-title {
@@ -73,8 +73,8 @@
 .cadastro-input {
   height: 34px;
   padding: 0 10px;
-  background-color: #121a29;
-  border: 1px solid #232e42;
+  background-color: #0a0a0a;
+  border: 1px solid rgba(199, 157, 51, 0.25);
   border-radius: 6px;
   color: #e5e7eb;
   font-size: 12px;
@@ -90,7 +90,7 @@
 }
 
 .cadastro-input:focus {
-  border-color: #5eead4;
+  border-color: #c79d33;
 }
 
 .cadastro-input-error {
@@ -106,8 +106,8 @@
 .cadastro-select {
   height: 34px;
   padding: 0 10px;
-  background-color: #121a29;
-  border: 1px solid #232e42;
+  background-color: #0a0a0a;
+  border: 1px solid rgba(199, 157, 51, 0.25);
   border-radius: 6px;
   color: #e5e7eb;
   font-size: 12px;
@@ -126,7 +126,7 @@
 }
 
 .cadastro-select:focus {
-  border-color: #5eead4;
+  border-color: #c79d33;
 }
 
 .cadastro-select-wrapper {
@@ -170,14 +170,14 @@
 
 .cadastro-btn-cancel {
   background: transparent;
-  border: 1px solid #232e42;
+  border: 1px solid rgba(199, 157, 51, 0.25);
   color: #a7b0bf;
 }
 
 .cadastro-btn-submit {
-  background-color: #5eead4;
+  background-color: #c79d33;
   border: none;
-  color: #053b32;
+  color: #171206;
   font-weight: 500;
 }
 

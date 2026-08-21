@@ -173,7 +173,7 @@ function Backup() {
             borderRadius: "var(--radius-md)",
             border: "1px solid var(--border-color)",
             cursor: "pointer",
-            backgroundColor: autoBackup ? "rgba(99, 102, 241, 0.03)" : "transparent",
+            backgroundColor: autoBackup ? "rgba(199, 157, 51, 0.03)" : "transparent",
           }}
         >
           <input

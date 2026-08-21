@@ -233,7 +233,7 @@ function Home() {
                         style={{
                           position: "absolute",
                           bottom: "105%",
-                          backgroundColor: "#0d0f22",
+                          backgroundColor: "#000000",
                           border: "1px solid var(--border-color)",
                           borderRadius: 8,
                           padding: "8px 12px",

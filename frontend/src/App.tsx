@@ -5,7 +5,7 @@ import Home from "./pages/Home";
 
 import Usuarios from "./pages/Usuarios";
 import Alunos from "./pages/Alunos";
-import Catraca from "./pages/Catraca";
+import Agenda from "./pages/Agenda";
 import Logs from "./pages/Logs";
 import Planos from "./pages/Planos";
 import MetodosPagamento from "./pages/MetodosPagamento";
@@ -91,7 +91,7 @@ function App() {
               case "alunos":
                 return <Alunos user={user} />;
               case "catraca":
-                return <Catraca />;
+                return <Agenda />;
               case "planos":
                 return <Planos user={user} />;
               case "metodos_pagamento":

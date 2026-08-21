@@ -47,6 +47,8 @@ const actionLabels: Record<string, string> = {
   ativou_gateway: "Ativou gateway de pagamento",
   desativou_gateway: "Desativou gateway de pagamento",
   configurou_gateway: "Configurou parâmetros do gateway",
+  agendou_aluno: "Agendou aluno na agenda",
+  removeu_agendamento: "Removeu agendamento",
 };
 
 function Logs() {

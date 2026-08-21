@@ -15,7 +15,7 @@
   left: 30%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 100%);
+  background: radial-gradient(circle, rgba(199, 157, 51, 0.15) 0%, rgba(199, 157, 51, 0.05) 50%, transparent 100%);
   filter: blur(80px);
   pointer-events: none;
   z-index: 1;
@@ -43,7 +43,7 @@
   color: var(--cyan);
   display: flex;
   align-items: center;
-  filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+  filter: drop-shadow(0 0 8px rgba(199, 157, 51, 0.5));
 }
 
 .topbar-title {
@@ -89,14 +89,14 @@
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.05) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: radial-gradient(circle at center, rgba(199, 157, 51, 0.2) 0%, rgba(199, 157, 51, 0.05) 100%);
+  border: 1px solid rgba(199, 157, 51, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--cyan);
   margin-bottom: 16px;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 15px rgba(199, 157, 51, 0.15);
   animation: logoPulse 3s infinite ease-in-out;
 }
 
@@ -130,12 +130,12 @@
 @keyframes logoPulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 15px rgba(199, 157, 51, 0.15);
   }
   50% {
     transform: scale(1.04);
-    box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
-    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 25px rgba(199, 157, 51, 0.3);
+    border-color: rgba(199, 157, 51, 0.5);
     color: var(--primary);
   }
 }

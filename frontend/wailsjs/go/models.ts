@@ -55,6 +55,51 @@ export namespace main {
 	        this.negado = source["negado"];
 	    }
 	}
+	export class Agendamento {
+	    id: number;
+	    data: string;
+	    student_id?: number;
+	    nome: string;
+	    turno: string;
+	    telefone?: string;
+	    observacao?: string;
+	    // Go type: time
+	    created_at: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Agendamento(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.data = source["data"];
+	        this.student_id = source["student_id"];
+	        this.nome = source["nome"];
+	        this.turno = source["turno"];
+	        this.telefone = source["telefone"];
+	        this.observacao = source["observacao"];
+	        this.created_at = this.convertValues(source["created_at"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class AlunoPorPlano {
 	    student_id: number;
 	    nome: string;
@@ -136,6 +181,20 @@ export namespace main {
 	        this.updated_at = source["updated_at"];
 	    }
 	}
+	export class CapacidadeDia {
+	    data: string;
+	    capacidade: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CapacidadeDia(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.data = source["data"];
+	        this.capacidade = source["capacidade"];
+	    }
+	}
 	export class CobrancaFatura {
 	    id: number;
 	    amount_cents: number;
@@ -205,6 +264,22 @@ export namespace main {
 		}
 	}
 	
+	export class DiaAgenda {
+	    data: string;
+	    total: number;
+	    capacidade: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DiaAgenda(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.data = source["data"];
+	        this.total = source["total"];
+	        this.capacidade = source["capacidade"];
+	    }
+	}
 	export class InadimplenteReport {
 	    student_id: number;
 	    nome: string;

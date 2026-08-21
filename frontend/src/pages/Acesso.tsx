@@ -26,6 +26,7 @@ const AVAILABLE_PAGES: PageOption[] = [
   { key: "metodos_pagamento", label: "Métodos de Pagamento", icon: "💳", desc: "Gateways, chaves PIX e configurações de pagamento." },
   { key: "usuarios", label: "Usuários", icon: "👥", desc: "Cadastro de contas administrativas secundárias (Admins)." },
   { key: "logs", label: "Logs de Acesso", icon: "📋", desc: "Registros de passagens na catraca e logs de auditoria." },
+  { key: "catraca", label: "Agenda Calendário", icon: "📅", desc: "Controle de vagas e agendamento de alunos." },
 ];
 
 function Acesso() {
@@ -200,7 +201,7 @@ function Acesso() {
                         padding: "12px 16px",
                         borderRadius: "var(--radius-md)",
                         border: "1px solid var(--border-color)",
-                        backgroundColor: isChecked ? "rgba(99, 102, 241, 0.03)" : "transparent",
+                        backgroundColor: isChecked ? "rgba(199, 157, 51, 0.03)" : "transparent",
                         cursor: "pointer",
                         transition: "all 0.2s",
                       }}

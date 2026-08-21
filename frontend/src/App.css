@@ -10,19 +10,19 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   
   /* Core Colors */
-  --bg-main: #060813;
-  --bg-sidebar: #0b0e1a;
-  --bg-card: rgba(17, 22, 43, 0.7);
-  --bg-input: #0f1225;
-  --bg-hover: rgba(99, 102, 241, 0.1);
-  --bg-active: rgba(99, 102, 241, 0.2);
+  --bg-main: #000000;
+  --bg-sidebar: #000000;
+  --bg-card: rgba(14, 13, 9, 0.85);
+  --bg-input: #0a0a0a;
+  --bg-hover: rgba(199, 157, 51, 0.1);
+  --bg-active: rgba(199, 157, 51, 0.18);
   
   /* Accent Colors */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --cyan: #06b6d4;
-  --cyan-glow: rgba(6, 182, 212, 0.15);
-  --purple: #8b5cf6;
+  --primary: #c79d33;
+  --primary-hover: #ac8428;
+  --cyan: #e0bc53;
+  --cyan-glow: rgba(199, 157, 51, 0.15);
+  --purple: #d4ab40;
   
   /* Status Colors */
   --success: #10b981;
@@ -41,7 +41,7 @@
   
   /* Borders & Shadows */
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(99, 102, 241, 0.5);
+  --border-focus: rgba(199, 157, 51, 0.5);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
@@ -98,7 +98,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .vmd-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 20px -8px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 12px 20px -8px rgba(199, 157, 51, 0.15);
 }
 
 /* Buttons */
@@ -121,11 +121,11 @@ h1, h2, h3, h4, h5, h6 {
 .vmd-btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 10px rgba(199, 157, 51, 0.3);
 }
 .vmd-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 14px rgba(199, 157, 51, 0.4);
   filter: brightness(1.1);
 }
 .vmd-btn-primary:active {
@@ -214,7 +214,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .vmd-input:focus, .vmd-select:focus, .vmd-textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(199, 157, 51, 0.2);
 }
 .vmd-input::placeholder, .vmd-textarea::placeholder {
   color: var(--text-dim);

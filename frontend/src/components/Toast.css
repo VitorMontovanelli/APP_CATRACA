@@ -25,9 +25,9 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid #2a2a38;
+  border: 1px solid rgba(199, 157, 51, 0.25);
   border-radius: 10px;
-  background: #12121c;
+  background: #000000;
   color: #e5e7eb;
   cursor: pointer;
   box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
@@ -35,8 +35,8 @@
 }
 
 .toast-bell:hover {
-  border-color: #3d3d4f;
-  background: #171724;
+  border-color: rgba(199, 157, 51, 0.5);
+  background: #0d0c08;
 }
 
 .toast-bell:active {
@@ -69,8 +69,8 @@
   max-width: calc(100vw - 40px);
   max-height: 60vh;
   overflow-y: auto;
-  background: #12121c;
-  border: 0.5px solid #2a2a38;
+  background: #000000;
+  border: 0.5px solid rgba(199, 157, 51, 0.25);
   border-radius: 10px;
   box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
   animation: toastPanelIn 0.2s ease-out;
@@ -81,7 +81,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 0.5px solid #2a2a38;
+  border-bottom: 0.5px solid rgba(199, 157, 51, 0.25);
 }
 
 .toast-panel-title {
@@ -118,8 +118,8 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 0.5px solid #2a2a38;
-  border-left: 3px solid #2a2a38;
+  border-bottom: 0.5px solid rgba(199, 157, 51, 0.25);
+  border-left: 3px solid rgba(199, 157, 51, 0.25);
 }
 
 .toast-panel-item:last-child {
@@ -213,9 +213,9 @@
   width: 100%;
   max-width: 340px;
   padding: 12px 14px;
-  background: #12121c;
-  border: 0.5px solid #2a2a38;
-  border-left: 3px solid #2a2a38;
+  background: #000000;
+  border: 0.5px solid rgba(199, 157, 51, 0.25);
+  border-left: 3px solid rgba(199, 157, 51, 0.25);
   border-radius: 8px;
   box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.6);
   pointer-events: auto;

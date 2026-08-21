@@ -34,6 +34,33 @@ type ResultadoAcesso struct {
 	Mensagem string `json:"mensagem"`
 }
 
+// ==== Agenda Calendário ====
+
+// Agendamento representa a reserva de uma vaga para um aluno em um dia e turno.
+type Agendamento struct {
+	ID         uint       `gorm:"primaryKey" json:"id"`
+	Data       string     `gorm:"size:10;index;not null" json:"data"` // formato YYYY-MM-DD
+	StudentID  *uint      `gorm:"index" json:"student_id"`            // nil quando o aluno não está cadastrado
+	Nome       string     `gorm:"size:255;not null" json:"nome"`
+	Turno      string     `gorm:"size:10;not null;check:turno IN ('manha','tarde','noite')" json:"turno"`
+	Telefone   *string    `gorm:"size:20" json:"telefone"`
+	Observacao *string    `gorm:"size:500" json:"observacao"`
+	CreatedAt  time.Time  `gorm:"autoCreateTime" json:"created_at"`
+}
+
+// DiaAgenda resume a ocupação de um dia do calendário.
+type DiaAgenda struct {
+	Data       string `json:"data"`
+	Total      int    `json:"total"`
+	Capacidade int    `json:"capacidade"`
+}
+
+// CapacidadeDia guarda a capacidade de vagas customizada de um dia específico.
+type CapacidadeDia struct {
+	Data       string `gorm:"primaryKey;size:10" json:"data"` // formato YYYY-MM-DD
+	Capacidade int    `gorm:"not null" json:"capacidade"`
+}
+
 type InadimplenteReport struct {
 	StudentID        uint    `json:"student_id"`
 	Nome             string  `json:"nome"`

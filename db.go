@@ -35,6 +35,8 @@ func initDB() *gorm.DB {
 		&AccessLog{},
 		&AuditLog{},
 		&Setting{},
+		&Agendamento{},
+		&CapacidadeDia{},
 	)
 	if err != nil {
 		log.Fatalf("Falha ao migrar banco de dados: %v", err)
