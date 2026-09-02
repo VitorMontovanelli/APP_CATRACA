@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function AdicionarAgendamento(arg1:string,arg2:number,arg3:string,arg4:string):Promise<main.Agendamento>;
 
+export function AdicionarAgendamentoIndividual(arg1:string,arg2:number,arg3:string,arg4:string,arg5:string,arg6:string):Promise<main.AgendamentoIndividual>;
+
 export function AlterarFoto(arg1:string):Promise<void>;
 
 export function AlterarSenha(arg1:string,arg2:string):Promise<void>;
@@ -20,15 +22,19 @@ export function AtivarStudent(arg1:number,arg2:boolean):Promise<void>;
 
 export function AtivarUsuario(arg1:number,arg2:boolean):Promise<void>;
 
+export function AtualizarAgendamentoIndividual(arg1:number,arg2:string,arg3:string,arg4:string):Promise<main.AgendamentoIndividual>;
+
 export function AtualizarConfigGateway(arg1:number,arg2:string):Promise<void>;
 
-export function AtualizarPlano(arg1:number,arg2:string,arg3:string,arg4:number,arg5:number,arg6:number):Promise<main.Plan>;
+export function AtualizarPlano(arg1:number,arg2:string,arg3:string,arg4:number,arg5:number,arg6:number,arg7:any):Promise<main.Plan>;
 
 export function AtualizarPlanoAluno(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
 
-export function AtualizarStudent(arg1:number,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:number):Promise<main.Student>;
+export function AtualizarStudent(arg1:number,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:string,arg8:number):Promise<main.Student>;
 
 export function AtualizarUsuario(arg1:number,arg2:string,arg3:string,arg4:string):Promise<main.User>;
+
+export function BaixarLaudo(arg1:number):Promise<void>;
 
 export function BuscarInvoice(arg1:number):Promise<main.Invoice>;
 
@@ -52,17 +58,19 @@ export function CriarInvoiceTeste():Promise<void>;
 
 export function CriarPaymentMethod(arg1:string,arg2:string,arg3:number,arg4:number):Promise<main.PaymentMethod>;
 
-export function CriarPlano(arg1:string,arg2:string,arg3:number,arg4:number,arg5:number):Promise<main.Plan>;
+export function CriarPlano(arg1:string,arg2:string,arg3:number,arg4:number,arg5:number,arg6:any):Promise<main.Plan>;
 
 export function CriarStudent(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:number):Promise<main.Student>;
 
-export function CriarStudentComPlano(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:number,arg7:number,arg8:number):Promise<main.Student>;
+export function CriarStudentComPlano(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:number,arg8:number,arg9:number):Promise<main.Student>;
 
 export function CriarStudentPlan(arg1:number,arg2:number,arg3:number):Promise<main.StudentPlan>;
 
 export function CriarUsuario(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number):Promise<main.User>;
 
 export function DefinirCapacidadeDia(arg1:string,arg2:number):Promise<void>;
+
+export function DefinirLimiteDiarioIndividual(arg1:number):Promise<void>;
 
 export function DeletarDadosTeste():Promise<void>;
 
@@ -79,6 +87,10 @@ export function GerarInvoice(arg1:number):Promise<main.Invoice>;
 export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
 
 export function ListarAgendamentosDia(arg1:string):Promise<Array<main.Agendamento>>;
+
+export function ListarAgendamentosIndividuaisDia(arg1:string):Promise<Array<main.AgendamentoIndividual>>;
+
+export function ListarAgendamentosIndividuaisMes(arg1:number,arg2:number):Promise<Array<main.DiaIndividualAgenda>>;
 
 export function ListarAgendamentosMes(arg1:number,arg2:number):Promise<Array<main.DiaAgenda>>;
 
@@ -112,17 +124,31 @@ export function Login(arg1:string,arg2:string):Promise<main.User>;
 
 export function MeuPerfil():Promise<main.User>;
 
+export function ObterConfigAgendaIndividual():Promise<main.ConfigAgendaIndividual>;
+
 export function ObterConfigTelegram():Promise<main.BackupConfig>;
 
 export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEstatistica>>;
+
+export function ObterFotoAluno(arg1:number):Promise<string>;
 
 export function ObterMetricasHome():Promise<main.MetricasHome>;
 
 export function RemoverAgendamento(arg1:number):Promise<void>;
 
+export function RemoverAgendamentoIndividual(arg1:number):Promise<void>;
+
+export function RemoverFotoAluno(arg1:number):Promise<void>;
+
+export function RemoverLaudoAluno(arg1:number):Promise<void>;
+
 export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
 
 export function SalvarConfigTelegram(arg1:string,arg2:string,arg3:boolean):Promise<void>;
+
+export function SalvarFotoAluno(arg1:number,arg2:string):Promise<void>;
+
+export function SalvarLaudoAluno(arg1:number,arg2:string,arg3:string):Promise<void>;
 
 export function SalvarPermissoesUsuario(arg1:number,arg2:string):Promise<void>;
 

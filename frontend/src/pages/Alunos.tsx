@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ListarStudentsComPlanos,
   CriarStudentComPlano,
@@ -8,6 +8,12 @@ import {
   ListarPaymentMethods,
   ListarPlanos,
   GerarInvoice,
+  SalvarLaudoAluno,
+  RemoverLaudoAluno,
+  BaixarLaudo,
+  SalvarFotoAluno,
+  RemoverFotoAluno,
+  ObterFotoAluno,
 } from "../../wailsjs/go/main/App";
 
 interface StudentComPlano {
@@ -16,7 +22,11 @@ interface StudentComPlano {
   cpf: string;
   data_nascimento?: string;
   telefone?: string;
+  telefone_urgencia?: string;
   email?: string;
+  laudo_medico?: string;
+  foto?: string;
+  fotoDataUrl?: string;
   forma_pagamento_id?: number;
   data_entrada: string;
   observacao?: string;
@@ -103,10 +113,24 @@ function Alunos({ user }: AlunosProps) {
   const [cpf, setCpf] = useState("");
   const [dataNasc, setDataNasc] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [telefoneUrgencia, setTelefoneUrgencia] = useState("");
   const [email, setEmail] = useState("");
   const [formaPagamentoId, setFormaPagamentoId] = useState(0);
   const [planId, setPlanId] = useState(0);
   const [dueDay, setDueDay] = useState(5);
+
+  const [laudoFile, setLaudoFile] = useState<File | null>(null);
+  const [laudoRemoved, setLaudoRemoved] = useState(false);
+  const [uploadingLaudo, setUploadingLaudo] = useState(false);
+  const laudoInputRef = useRef<HTMLInputElement>(null);
+
+  const [fotoDataUrl, setFotoDataUrl] = useState("");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [photoChanged, setPhotoChanged] = useState(false);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const canManage = user.cargo === "super_admin" || user.cargo === "admin";
 
@@ -116,6 +140,10 @@ function Alunos({ user }: AlunosProps) {
   }, []);
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!showModal) stopCamera();
+  }, [showModal]);
 
   async function handleRegistrarPagamento(studentPlanId: number) {
     setLoadingInvoice(studentPlanId);
@@ -137,7 +165,16 @@ function Alunos({ user }: AlunosProps) {
         ListarPlanos(),
         ListarPaymentMethods(),
       ]);
-      setStudents((s as unknown as StudentComPlano[]) || []);
+      const list = (s as unknown as StudentComPlano[]) || [];
+      setStudents(await Promise.all(list.map(async (st) => {
+        if (st.foto) {
+          try {
+            const url = (await ObterFotoAluno(st.id)) as unknown as string;
+            return { ...st, fotoDataUrl: url || "" };
+          } catch { return st; }
+        }
+        return st;
+      })));
       setPlans(((p as unknown as Plan[]) || []).filter((pl) => pl.active));
       setMethods(((m as unknown as PaymentMethod[]) || []).filter((pm) => pm.enabled));
     } catch (e) { setError(String(e)); }
@@ -145,34 +182,151 @@ function Alunos({ user }: AlunosProps) {
 
   function openCreate() {
     setEditId(null);
-    setNome(""); setCpf(""); setDataNasc(""); setTelefone(""); setEmail("");
+    setNome(""); setCpf(""); setDataNasc(""); setTelefone(""); setTelefoneUrgencia(""); setEmail("");
     setFormaPagamentoId(0); setPlanId(0); setDueDay(5);
+    setLaudoFile(null); setLaudoRemoved(false);
+    setFotoDataUrl(""); setPhotoChanged(false); setPhotoRemoved(false);
     setError(""); setShowModal(true);
   }
 
-  function openEdit(s: StudentComPlano) {
+  async function openEdit(s: StudentComPlano) {
     setEditId(s.id);
     setNome(s.nome); setCpf(s.cpf);
     setDataNasc(s.data_nascimento || "");
-    setTelefone(s.telefone || ""); setEmail(s.email || "");
+    setTelefone(s.telefone || ""); setTelefoneUrgencia(s.telefone_urgencia || ""); setEmail(s.email || "");
     setFormaPagamentoId(s.forma_pagamento_id || 0);
     setPlanId(s.student_plan_id ? (plans.find(p => p.name === s.plano_nome)?.id || 0) : 0);
     setDueDay(s.due_day || 5);
+    setLaudoFile(null); setLaudoRemoved(false);
+    let existing = "";
+    try {
+      existing = ((await ObterFotoAluno(s.id)) as unknown as string) || "";
+    } catch { existing = ""; }
+    setFotoDataUrl(existing);
+    setPhotoChanged(false); setPhotoRemoved(false);
     setError(""); setShowModal(true);
+  }
+
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function stopCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
+    setCameraReady(false);
+  }
+
+  function captureFrame() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) { stopCamera(); return; }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) { stopCamera(); return; }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    stopCamera();
+    setFotoDataUrl(dataUrl);
+    setPhotoChanged(true);
+    setPhotoRemoved(false);
+  }
+
+  function takePhoto() {
+    captureFrame();
+  }
+
+  async function startCamera() {
+    setError("");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Este dispositivo não suporta acesso à câmera.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      streamRef.current = stream;
+      setCameraActive(true);
+      setCameraReady(false);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+        const checkReady = () => {
+          if (videoRef.current && videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
+            setCameraReady(true);
+          } else {
+            setTimeout(checkReady, 100);
+          }
+        };
+        setTimeout(checkReady, 100);
+      }
+    } catch (e: any) {
+      const msg = e?.message?.toLowerCase?.() || "";
+      let friendly = "Não foi possível acessar a câmera. Verifique as permissões do navegador.";
+      if (msg.includes("notallowed") || msg.includes("denied") || msg.includes("permission")) {
+        friendly = "Acesso à câmera negado. Habilite a câmera nas permissões do Windows/do aplicativo e tente novamente.";
+      }
+      setError(friendly);
+    }
+  }
+
+  function clearPhoto() {
+    stopCamera();
+    setFotoDataUrl("");
+    setPhotoChanged(false);
+    if (editId != null) setPhotoRemoved(true);
   }
 
   async function handleSave() {
     setError("");
+    setUploadingLaudo(true);
     try {
-      if (editId) {
-        await AtualizarStudent(editId, nome, cpf, dataNasc, telefone, email, formaPagamentoId);
-        await AtualizarPlanoAluno(editId, planId, formaPagamentoId, dueDay);
+      let studentId: number | null = editId;
+      if (studentId) {
+        await AtualizarStudent(studentId, nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId);
+        await AtualizarPlanoAluno(studentId, planId, formaPagamentoId, dueDay);
       } else {
-        await CriarStudentComPlano(nome, cpf, dataNasc, telefone, email, formaPagamentoId, planId, dueDay);
+        const created = (await CriarStudentComPlano(
+          nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId, planId, dueDay
+        )) as unknown as StudentComPlano;
+        studentId = created.id;
       }
+
+      if (studentId) {
+        const student = students.find((st) => st.id === studentId);
+        const hadLaudo = !!student?.laudo_medico;
+        if (laudoRemoved && hadLaudo) {
+          await RemoverLaudoAluno(studentId);
+        }
+        if (laudoFile) {
+          const base64 = await fileToBase64(laudoFile);
+          await SalvarLaudoAluno(studentId, base64, laudoFile.name);
+        }
+        const hadFoto = !!student?.foto;
+        if (photoRemoved && hadFoto) {
+          await RemoverFotoAluno(studentId);
+        }
+        if (photoChanged && fotoDataUrl) {
+          await SalvarFotoAluno(studentId, fotoDataUrl);
+        }
+      }
+
       setShowModal(false);
       await load();
-    } catch (e) { setError(String(e)); }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setUploadingLaudo(false);
+    }
   }
 
   async function toggleAtivo(s: StudentComPlano) {
@@ -180,6 +334,50 @@ function Alunos({ user }: AlunosProps) {
       await AtivarStudent(s.id, !s.ativo);
       await load();
     } catch (e) { setError(String(e)); }
+  }
+
+  const currentStudent = editId != null ? students.find((st) => st.id === editId) : undefined;
+  const existingLaudoName = currentStudent?.laudo_medico
+    ? currentStudent.laudo_medico.split(/[\\/]/).pop() || currentStudent.laudo_medico
+    : "";
+
+  const canRemoveLaudo =
+    (laudoFile != null) || (!!existingLaudoName && !laudoRemoved);
+
+  const laudoStatusText = laudoFile
+    ? "Novo arquivo: " + laudoFile.name
+    : (!!existingLaudoName && !laudoRemoved)
+      ? "Laudo anexado: " + existingLaudoName
+      : (existingLaudoName && laudoRemoved)
+        ? "Laudo removido"
+        : "";
+
+  const laudoStatusColor = laudoRemoved
+    ? "var(--danger)"
+    : (laudoFile || existingLaudoName)
+      ? "var(--success)"
+      : "var(--text-muted)";
+
+  function handleLaudoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type && file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Apenas arquivos em formato PDF são aceitos.");
+      return;
+    }
+    setLaudoFile(file);
+    setLaudoRemoved(false);
+    setError("");
+    if (laudoInputRef.current) laudoInputRef.current.value = "";
+  }
+
+  function handleRemoveLaudo() {
+    setLaudoFile(null);
+    setLaudoRemoved(true);
+  }
+
+  function handleBaixarLaudo(id: number) {
+    BaixarLaudo(id).catch((e) => setError(String(e)));
   }
 
   function formatDate(d: string): string {
@@ -243,6 +441,24 @@ function Alunos({ user }: AlunosProps) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>
+                  {s.fotoDataUrl ? (
+                    <img
+                      src={s.fotoDataUrl}
+                      alt={s.nome}
+                      style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "rgba(255,255,255,0.08)", color: "var(--text-muted)",
+                        fontSize: 14, fontWeight: 700,
+                      }}
+                    >
+                      {s.nome.trim().charAt(0).toUpperCase() || "?"}
+                    </span>
+                  )}
                   {s.nome}
                   <span className={`vmd-badge ${s.ativo ? "vmd-badge-success" : "vmd-badge-danger"}`}>
                     {s.ativo ? "Ativo" : "Inativo"}
@@ -251,9 +467,23 @@ function Alunos({ user }: AlunosProps) {
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   CPF: {s.cpf} {s.data_nascimento ? `· Nasc: ${formatDate(s.data_nascimento)}` : ""}
                 </div>
+                {s.telefone_urgencia && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                    Urgência: {s.telefone_urgencia}
+                  </div>
+                )}
               </div>
               
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                {s.laudo_medico && (
+                  <button
+                    onClick={() => handleBaixarLaudo(s.id)}
+                    className="vmd-btn vmd-btn-secondary"
+                    style={{ padding: "6px 12px", height: 32 }}
+                  >
+                    📄 Laudo
+                  </button>
+                )}
                 {canManage && (
                   <>
                     <button onClick={() => openEdit(s)} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 12px", height: 32 }}>
@@ -364,6 +594,77 @@ function Alunos({ user }: AlunosProps) {
 
             <div className="vmd-modal-body">
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="vmd-form-group" style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                  <label className="vmd-label" style={{ alignSelf: "center" }}>Foto do Aluno</label>
+                  <div
+                    style={{
+                      width: 360, height: 360, borderRadius: 12,
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid var(--border-color)",
+                      overflow: "hidden",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      position: "relative",
+                    }}
+                  >
+                    {cameraActive ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : fotoDataUrl ? (
+                      <img src={fotoDataUrl} alt="Foto do aluno" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "var(--text-dim)" }}>
+                        <span style={{ fontSize: 38, lineHeight: 1 }}>📷</span>
+                        <span style={{ fontSize: 11 }}>Sem foto</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                    {cameraActive && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={takePhoto}
+                          disabled={!cameraReady}
+                          className="vmd-btn vmd-btn-primary"
+                          style={{ padding: "6px 14px", height: 32, opacity: cameraReady ? 1 : 0.5 }}
+                        >
+                          📷 Tirar Foto
+                        </button>
+                        <button type="button" onClick={stopCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 12px", height: 32 }}>
+                          Cancelar Câmera
+                        </button>
+                      </>
+                    )}
+                    {!cameraActive && !fotoDataUrl && (
+                      <button type="button" onClick={startCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 14px", height: 32 }}>
+                        📷 Tirar Foto
+                      </button>
+                    )}
+                    {!cameraActive && fotoDataUrl && (
+                      <button type="button" onClick={startCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 14px", height: 32 }}>
+                        🔄 Tirar Novamente
+                      </button>
+                    )}
+                    {!cameraActive && fotoDataUrl && (
+                      <button type="button" onClick={clearPhoto} className="vmd-btn vmd-btn-danger" style={{ padding: "6px 12px", height: 32, background: "transparent" }}>
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>
+                    {cameraActive
+                      ? (cameraReady
+                          ? "Clique em \"Tirar Foto\" para capturar."
+                          : "Aguardando imagem da câmera...")
+                      : "Abra a câmera para posicionar o aluno e clique em \"Tirar Foto\" para capturar."}
+                  </div>
+                </div>
+
                 <div className="vmd-form-group" style={{ marginBottom: 0 }}>
                   <label className="vmd-label">Nome Completo</label>
                   <input
@@ -420,6 +721,17 @@ function Alunos({ user }: AlunosProps) {
                   </div>
                 </div>
 
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">Telefone de Urgência</label>
+                  <input
+                    value={telefoneUrgencia}
+                    onChange={(e) => setTelefoneUrgencia(maskTel(e.target.value))}
+                    placeholder="(00) 90000-0000"
+                    maxLength={15}
+                    className="vmd-input"
+                  />
+                </div>
+
                 <div style={{ borderTop: "1px solid var(--border-color)", margin: "8px 0" }} />
 
                 <div className="vmd-grid-2">
@@ -463,6 +775,46 @@ function Alunos({ user }: AlunosProps) {
                     onChange={(e) => setDueDay(Number(e.target.value))}
                     className="vmd-input"
                   />
+                </div>
+
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">Laudo do Aluno</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <input
+                      ref={laudoInputRef}
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleLaudoSelect}
+                      style={{ display: "none" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => laudoInputRef.current?.click()}
+                      className="vmd-btn vmd-btn-secondary"
+                      style={{ padding: "6px 12px", height: 32 }}
+                    >
+                      📎 Selecionar Laudo PDF
+                    </button>
+                    {laudoStatusText && (
+                      <span style={{ fontSize: 12, color: laudoStatusColor }}>{laudoStatusText}</span>
+                    )}
+                    {canRemoveLaudo && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveLaudo}
+                        className="vmd-btn vmd-btn-danger"
+                        style={{ padding: "6px 12px", height: 32, background: "transparent" }}
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                  {uploadingLaudo && (
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>Enviando laudo...</div>
+                  )}
+                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
+                    Apenas arquivos em formato PDF (ex.: liberação para atividade física).
+                  </div>
                 </div>
               </div>
             </div>

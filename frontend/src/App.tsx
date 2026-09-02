@@ -5,7 +5,6 @@ import Home from "./pages/Home";
 
 import Usuarios from "./pages/Usuarios";
 import Alunos from "./pages/Alunos";
-import Agenda from "./pages/Agenda";
 import Logs from "./pages/Logs";
 import Planos from "./pages/Planos";
 import MetodosPagamento from "./pages/MetodosPagamento";
@@ -13,6 +12,7 @@ import Financeiro from "./pages/Financeiro";
 import Cobranca from "./pages/Cobranca";
 import Acesso from "./pages/Acesso";
 import Backup from "./pages/Backup";
+import CalendariosAgendamento from "./pages/CalendariosAgendamento";
 
 interface User {
   id: number;
@@ -90,8 +90,8 @@ function App() {
                 return <Usuarios user={user} />;
               case "alunos":
                 return <Alunos user={user} />;
-              case "catraca":
-                return <Agenda />;
+              case "agenda":
+                return <CalendariosAgendamento />;
               case "planos":
                 return <Planos user={user} />;
               case "metodos_pagamento":

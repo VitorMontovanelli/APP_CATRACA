@@ -61,6 +61,42 @@ type CapacidadeDia struct {
 	Capacidade int    `gorm:"not null" json:"capacidade"`
 }
 
+// ==== Agenda Individual (Professora) ====
+
+// Práticas individuais disponíveis para agendamento com a professora.
+const (
+	PraticaVentosaterapia       = "ventosaterapia"
+	PraticaLiberacaoMiofascial  = "liberacao_miofascial"
+	PraticaPersonalTrainer      = "personal_trainer"
+	PraticaKinesioTape          = "kinesio_tape"
+)
+
+// AgendamentoIndividual representa um atendimento individual marcado com a professora.
+type AgendamentoIndividual struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	Data       string    `gorm:"size:10;index;not null" json:"data"`  // formato YYYY-MM-DD
+	Hora       string    `gorm:"size:5;not null" json:"hora"`         // início do atendimento, HH:MM
+	StudentID  *uint     `gorm:"index" json:"student_id"`             // nil quando o aluno não está cadastrado
+	Nome       string    `gorm:"size:255;not null" json:"nome"`
+	Pratica    string    `gorm:"size:30;not null;check:pratica IN ('ventosaterapia','liberacao_miofascial','personal_trainer','kinesio_tape')" json:"pratica"`
+	Observacao *string   `gorm:"size:500" json:"observacao"`
+	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
+}
+
+// DiaIndividualAgenda resume a ocupação individual de um dia do calendário.
+type DiaIndividualAgenda struct {
+	Data       string `json:"data"`
+	Total      int    `json:"total"`
+	Capacidade int    `json:"capacidade"`
+	Praticas   string `json:"praticas"` // práticas do dia separadas por vírgula
+}
+
+// ConfigAgendaIndividual contém as configurações globais da agenda individual.
+type ConfigAgendaIndividual struct {
+	LimiteDiario int `json:"limite_diario"` // limite atual ajustável
+	LimiteMaximo int `json:"limite_maximo"` // teto absoluto (10)
+}
+
 type InadimplenteReport struct {
 	StudentID        uint    `json:"student_id"`
 	Nome             string  `json:"nome"`
@@ -101,7 +137,10 @@ type Student struct {
 	CPF             string    `gorm:"size:14;uniqueIndex" json:"cpf"`
 	DataNascimento  *string   `gorm:"size:10" json:"data_nascimento"`
 	Telefone        *string   `gorm:"size:20" json:"telefone"`
+	TelefoneUrgencia *string  `gorm:"size:20" json:"telefone_urgencia"`
 	Email           *string   `gorm:"size:255" json:"email"`
+	LaudoMedico     *string   `gorm:"size:500" json:"laudo_medico"`
+	Foto            *string   `gorm:"size:500" json:"foto"`
 	FormaPagamentoID *uint    `json:"forma_pagamento_id"`
 	DataEntrada     time.Time `gorm:"autoCreateTime" json:"data_entrada"`
 	Observacao      *string   `gorm:"size:500" json:"observacao"`
@@ -124,15 +163,16 @@ type StudentComPlano struct {
 }
 
 type Plan struct {
-	ID              uint       `gorm:"primaryKey" json:"id"`
-	Name            string     `gorm:"size:255;not null" json:"name"`
-	Description     string     `gorm:"size:500" json:"description"`
-	DurationDays    int        `gorm:"not null" json:"duration_days"`
-	PriceCents      int        `gorm:"not null" json:"price_cents"`
-	GracePeriodDays int        `gorm:"default:5" json:"grace_period_days"`
-	Active          bool       `gorm:"default:true" json:"active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       *time.Time `json:"updated_at"`
+	ID                uint       `gorm:"primaryKey" json:"id"`
+	Name              string     `gorm:"size:255;not null" json:"name"`
+	Description       string     `gorm:"size:500" json:"description"`
+	DurationDays      int        `gorm:"not null" json:"duration_days"`
+	PriceCents        int        `gorm:"not null" json:"price_cents"`                 // valor no pix/dinheiro
+	PrecoCartaoCents  *int       `gorm:"default:null" json:"preco_cartao_cents"`        // valor no cartão de crédito (opcional)
+	GracePeriodDays   int        `gorm:"default:5" json:"grace_period_days"`
+	Active            bool       `gorm:"default:true" json:"active"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         *time.Time `json:"updated_at"`
 }
 
 type PaymentMethod struct {

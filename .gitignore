@@ -34,6 +34,9 @@ catraca.db-wal
 # Uploads
 comprovantes/
 
+# Fotos e laudos de alunos (dados sensíveis - LGPD)
+cliente/
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

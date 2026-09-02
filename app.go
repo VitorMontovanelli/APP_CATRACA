@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -294,6 +296,264 @@ func (a *App) RemoverAgendamento(id uint) error {
 	return nil
 }
 
+// =============== Agenda Individual (Professora) ===============
+
+const LimiteIndividualPadrao = 10
+const chaveLimiteIndividual = "agenda_individual_limite"
+
+var horariosIndividuais = []string{
+	"06:00", "07:00", "08:00", "09:00", "10:00", // Manhã 06:00–11:00
+	"15:00", "16:00", "17:00", "18:00", // Tarde 15:00–19:00
+	"19:00", // Noite 19:00–20:00
+}
+
+var praticasIndividuais = []string{
+	PraticaVentosaterapia,
+	PraticaLiberacaoMiofascial,
+	PraticaPersonalTrainer,
+	PraticaKinesioTape,
+}
+
+func horarioIndividualValido(hora string) bool {
+	for _, h := range horariosIndividuais {
+		if h == hora {
+			return true
+		}
+	}
+	return false
+}
+
+func praticaValida(pratica string) bool {
+	for _, p := range praticasIndividuais {
+		if p == pratica {
+			return true
+		}
+	}
+	return false
+}
+
+// limiteIndividual retorna o limite diário configurado (padrão 10).
+func (a *App) limiteIndividual() int {
+	var s Setting
+	if err := a.db.Where("`key` = ?", chaveLimiteIndividual).First(&s).Error; err != nil {
+		return LimiteIndividualPadrao
+	}
+	n, err := strconv.Atoi(s.Value)
+	if err != nil || n < 1 || n > LimiteIndividualPadrao {
+		return LimiteIndividualPadrao
+	}
+	return n
+}
+
+// ObterConfigAgendaIndividual retorna a configuração atual da agenda individual.
+func (a *App) ObterConfigAgendaIndividual() (*ConfigAgendaIndividual, error) {
+	if !ehAdmin(a.actorCargo) {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	return &ConfigAgendaIndividual{
+		LimiteDiario: a.limiteIndividual(),
+		LimiteMaximo: LimiteIndividualPadrao,
+	}, nil
+}
+
+// DefinirLimiteDiarioIndividual ajusta o limite diário de atendimentos individuais (1 a 10).
+func (a *App) DefinirLimiteDiarioIndividual(limite int) error {
+	if !ehAdmin(a.actorCargo) {
+		return fmt.Errorf("permissão negada")
+	}
+	if limite < 1 || limite > LimiteIndividualPadrao {
+		return fmt.Errorf("o limite diário deve estar entre 1 e %d atendimentos", LimiteIndividualPadrao)
+	}
+	var s Setting
+	err := a.db.Where("`key` = ?", chaveLimiteIndividual).First(&s).Error
+	if err == gorm.ErrRecordNotFound {
+		s = Setting{Key: chaveLimiteIndividual, Value: strconv.Itoa(limite)}
+		if err := a.db.Create(&s).Error; err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		s.Value = strconv.Itoa(limite)
+		if err := a.db.Save(&s).Error; err != nil {
+			return err
+		}
+	}
+	a.registrarAuditComDetalhes("ajustou_limite_agenda_individual", 0,
+		fmt.Sprintf("limite_diario=%d", limite))
+	return nil
+}
+
+// ListarAgendamentosIndividuaisMes retorna a ocupação individual de cada dia do mês.
+func (a *App) ListarAgendamentosIndividuaisMes(ano, mes int) ([]DiaIndividualAgenda, error) {
+	if !ehAdmin(a.actorCargo) {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	prefix := fmt.Sprintf("%04d-%02d", ano, mes)
+	list := []DiaIndividualAgenda{}
+	limite := a.limiteIndividual()
+	err := a.db.Raw(`
+		SELECT COALESCE(i.data, c.data) AS data,
+		       COUNT(i.id) AS total,
+		       COALESCE(c.capacidade, ?) AS capacidade,
+		       COALESCE(GROUP_CONCAT(i.pratica), '') AS praticas
+		FROM agendamento_individuals i
+		LEFT JOIN capacidade_dias c ON c.data = i.data
+		WHERE COALESCE(i.data, c.data) LIKE ?
+		GROUP BY COALESCE(i.data, c.data)
+
+		UNION
+
+		SELECT c.data AS data,
+		       0 AS total,
+		       c.capacidade AS capacidade,
+		       '' AS praticas
+		FROM capacidade_dias c
+		WHERE c.data LIKE ?
+		  AND c.data NOT IN (SELECT DISTINCT data FROM agendamento_individuals WHERE data LIKE ?)
+	`, limite, prefix+"%", prefix+"%", prefix+"%").Scan(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []DiaIndividualAgenda{}
+	}
+	return list, nil
+}
+
+// ListarAgendamentosIndividuaisDia retorna os atendimentos individuais de um dia.
+func (a *App) ListarAgendamentosIndividuaisDia(data string) ([]AgendamentoIndividual, error) {
+	if !ehAdmin(a.actorCargo) {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	if _, err := time.Parse("2006-01-02", data); err != nil {
+		return nil, fmt.Errorf("data inválida")
+	}
+	list := []AgendamentoIndividual{}
+	err := a.db.Where("data = ?", data).Order("hora, id").Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []AgendamentoIndividual{}
+	}
+	return list, nil
+}
+
+// AdicionarAgendamentoIndividual marca um atendimento individual no dia e horário escolhidos.
+// alunoID > 0 vincula um aluno cadastrado; alunoID == 0 usa o nome digitado.
+func (a *App) AdicionarAgendamentoIndividual(data string, alunoID uint, nome, hora, pratica, observacao string) (*AgendamentoIndividual, error) {
+	if !ehAdmin(a.actorCargo) {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	if _, err := time.Parse("2006-01-02", data); err != nil {
+		return nil, fmt.Errorf("data inválida")
+	}
+	if !horarioIndividualValido(hora) {
+		return nil, fmt.Errorf("horário inválido: use um dos horários disponíveis da grade")
+	}
+	if !praticaValida(pratica) {
+		return nil, fmt.Errorf("prática inválida")
+	}
+
+	nome = strings.TrimSpace(nome)
+	if alunoID > 0 {
+		var s Student
+		if err := a.db.First(&s, alunoID).Error; err != nil {
+			return nil, fmt.Errorf("aluno não encontrado")
+		}
+		nome = s.Nome
+	} else if nome == "" {
+		return nil, fmt.Errorf("selecione um aluno cadastrado ou informe o nome")
+	}
+
+	var count int64
+	a.db.Model(&AgendamentoIndividual{}).Where("data = ?", data).Count(&count)
+	limite := a.limiteIndividual()
+	if count >= int64(limite) {
+		return nil, fmt.Errorf("limite diário de %d atendimentos atingido para este dia", limite)
+	}
+
+	var ocupado int64
+	a.db.Model(&AgendamentoIndividual{}).Where("data = ? AND hora = ?", data, hora).Count(&ocupado)
+	if ocupado > 0 {
+		return nil, fmt.Errorf("o horário %s já está ocupado neste dia", hora)
+	}
+
+	ag := AgendamentoIndividual{
+		Data:      data,
+		Hora:      hora,
+		StudentID: uintPtr(alunoID),
+		Nome:      nome,
+		Pratica:   pratica,
+	}
+	observacao = strings.TrimSpace(observacao)
+	if observacao != "" {
+		ag.Observacao = &observacao
+	}
+	if err := a.db.Create(&ag).Error; err != nil {
+		return nil, err
+	}
+	a.registrarAuditComDetalhes("agendou_atendimento_individual", ag.ID,
+		fmt.Sprintf("data=%s, hora=%s, aluno=%s, pratica=%s", data, hora, nome, pratica))
+	return &ag, nil
+}
+
+// AtualizarAgendamentoIndividual altera horário, prática ou observação de um atendimento.
+func (a *App) AtualizarAgendamentoIndividual(id uint, hora, pratica, observacao string) (*AgendamentoIndividual, error) {
+	if !ehAdmin(a.actorCargo) {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	var ag AgendamentoIndividual
+	if err := a.db.First(&ag, id).Error; err != nil {
+		return nil, fmt.Errorf("atendimento não encontrado")
+	}
+	if !horarioIndividualValido(hora) {
+		return nil, fmt.Errorf("horário inválido: use um dos horários disponíveis da grade")
+	}
+	if !praticaValida(pratica) {
+		return nil, fmt.Errorf("prática inválida")
+	}
+	if hora != ag.Hora {
+		var ocupado int64
+		a.db.Model(&AgendamentoIndividual{}).Where("data = ? AND hora = ? AND id <> ?", ag.Data, hora, id).Count(&ocupado)
+		if ocupado > 0 {
+			return nil, fmt.Errorf("o horário %s já está ocupado neste dia", hora)
+		}
+	}
+	ag.Hora = hora
+	ag.Pratica = pratica
+	observacao = strings.TrimSpace(observacao)
+	if observacao != "" {
+		ag.Observacao = &observacao
+	} else {
+		ag.Observacao = nil
+	}
+	if err := a.db.Save(&ag).Error; err != nil {
+		return nil, err
+	}
+	a.registrarAuditComDetalhes("editou_atendimento_individual", ag.ID,
+		fmt.Sprintf("data=%s, hora=%s, aluno=%s, pratica=%s", ag.Data, ag.Hora, ag.Nome, ag.Pratica))
+	return &ag, nil
+}
+
+// RemoverAgendamentoIndividual libera o horário removendo o atendimento individual.
+func (a *App) RemoverAgendamentoIndividual(id uint) error {
+	if !ehAdmin(a.actorCargo) {
+		return fmt.Errorf("permissão negada")
+	}
+	var ag AgendamentoIndividual
+	if err := a.db.First(&ag, id).Error; err != nil {
+		return fmt.Errorf("atendimento não encontrado")
+	}
+	if err := a.db.Delete(&ag).Error; err != nil {
+		return err
+	}
+	a.registrarAuditComDetalhes("removeu_atendimento_individual", id,
+		fmt.Sprintf("data=%s, hora=%s, aluno=%s, pratica=%s", ag.Data, ag.Hora, ag.Nome, ag.Pratica))
+	return nil
+}
+
 // =============== Alunos (Students CRUD) ===============
 
 func (a *App) ListarStudents() ([]Student, error) {
@@ -330,7 +590,7 @@ func (a *App) BuscarStudent(id uint) (*Student, error) {
 	return &s, nil
 }
 
-func (a *App) CriarStudentComPlano(nome, cpf, dataNascimento, telefone, email string, formaPagamentoID, planID, dueDay uint) (*Student, error) {
+func (a *App) CriarStudentComPlano(nome, cpf, dataNascimento, telefone, telefoneUrgencia, email string, formaPagamentoID, planID, dueDay uint) (*Student, error) {
 	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
 		return nil, fmt.Errorf("permissão negada")
 	}
@@ -338,11 +598,12 @@ func (a *App) CriarStudentComPlano(nome, cpf, dataNascimento, telefone, email st
 	tx := a.db.Begin()
 
 	student := Student{
-		Nome:            nome,
-		CPF:             cpf,
-		DataNascimento:  strPtr(dataNascimento),
-		Telefone:        strPtr(telefone),
-		Email:           strPtr(email),
+		Nome:             nome,
+		CPF:              cpf,
+		DataNascimento:   strPtr(dataNascimento),
+		Telefone:         strPtr(telefone),
+		TelefoneUrgencia: strPtr(telefoneUrgencia),
+		Email:            strPtr(email),
 		FormaPagamentoID: uintPtr(formaPagamentoID),
 	}
 	if err := tx.Create(&student).Error; err != nil {
@@ -371,7 +632,7 @@ func (a *App) CriarStudentComPlano(nome, cpf, dataNascimento, telefone, email st
 	return a.BuscarStudent(student.ID)
 }
 
-func (a *App) AtualizarStudent(id uint, nome, cpf, dataNascimento, telefone, email string, formaPagamentoID uint) (*Student, error) {
+func (a *App) AtualizarStudent(id uint, nome, cpf, dataNascimento, telefone, telefoneUrgencia, email string, formaPagamentoID uint) (*Student, error) {
 	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
 		return nil, fmt.Errorf("permissão negada")
 	}
@@ -383,6 +644,7 @@ func (a *App) AtualizarStudent(id uint, nome, cpf, dataNascimento, telefone, ema
 	student.CPF = cpf
 	student.DataNascimento = strPtr(dataNascimento)
 	student.Telefone = strPtr(telefone)
+	student.TelefoneUrgencia = strPtr(telefoneUrgencia)
 	student.Email = strPtr(email)
 	student.FormaPagamentoID = uintPtr(formaPagamentoID)
 
@@ -415,7 +677,10 @@ func (a *App) ListarStudentsComPlanos() ([]StudentComPlano, error) {
 		CPF              string
 		DataNascimento   *string
 		Telefone         *string
+		TelefoneUrgencia *string
 		Email            *string
+		LaudoMedico      *string
+		Foto             *string
 		FormaPagamentoID *uint
 		DataEntrada      string
 		Observacao       *string
@@ -436,7 +701,7 @@ func (a *App) ListarStudentsComPlanos() ([]StudentComPlano, error) {
 	var raw []rawResult
 	err := a.db.Raw(`
 		SELECT
-			s.id, s.nome, s.cpf, s.data_nascimento, s.telefone, s.email,
+			s.id, s.nome, s.cpf, s.data_nascimento, s.telefone, s.telefone_urgencia, s.email, s.laudo_medico, s.foto,
 			s.forma_pagamento_id, s.data_entrada, s.observacao, s.ativo,
 			s.created_at, s.updated_at,
 			p.name, p.price_cents, sp.status,
@@ -479,7 +744,10 @@ func (a *App) ListarStudentsComPlanos() ([]StudentComPlano, error) {
 				CPF:              r.CPF,
 				DataNascimento:   r.DataNascimento,
 				Telefone:         r.Telefone,
+				TelefoneUrgencia: r.TelefoneUrgencia,
 				Email:            r.Email,
+				LaudoMedico:      r.LaudoMedico,
+				Foto:             r.Foto,
 				FormaPagamentoID: r.FormaPagamentoID,
 				DataEntrada:      de,
 				Observacao:       r.Observacao,
@@ -723,16 +991,17 @@ func (a *App) ListarPlanos() ([]Plan, error) {
 	return list, err
 }
 
-func (a *App) CriarPlano(name, description string, durationDays, priceCents, gracePeriodDays int) (*Plan, error) {
+func (a *App) CriarPlano(name, description string, durationDays, priceCents, gracePeriodDays int, precoCartaoCents *int) (*Plan, error) {
 	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
 		return nil, fmt.Errorf("permissão negada")
 	}
 	plan := Plan{
-		Name:            name,
-		Description:     description,
-		DurationDays:    durationDays,
-		PriceCents:      priceCents,
-		GracePeriodDays: gracePeriodDays,
+		Name:             name,
+		Description:      description,
+		DurationDays:     durationDays,
+		PriceCents:       priceCents,
+		PrecoCartaoCents: precoCartaoCents,
+		GracePeriodDays:  gracePeriodDays,
 	}
 	if err := a.db.Create(&plan).Error; err != nil {
 		return nil, err
@@ -750,7 +1019,7 @@ func (a *App) BuscarPlano(id uint) (*Plan, error) {
 	return &p, nil
 }
 
-func (a *App) AtualizarPlano(id uint, name, description string, durationDays, priceCents, gracePeriodDays int) (*Plan, error) {
+func (a *App) AtualizarPlano(id uint, name, description string, durationDays, priceCents, gracePeriodDays int, precoCartaoCents *int) (*Plan, error) {
 	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
 		return nil, fmt.Errorf("permissão negada")
 	}
@@ -762,6 +1031,7 @@ func (a *App) AtualizarPlano(id uint, name, description string, durationDays, pr
 	plan.Description = description
 	plan.DurationDays = durationDays
 	plan.PriceCents = priceCents
+	plan.PrecoCartaoCents = precoCartaoCents
 	plan.GracePeriodDays = gracePeriodDays
 	if err := a.db.Save(plan).Error; err != nil {
 		return nil, err
@@ -1353,6 +1623,177 @@ func (a *App) SalvarComprovante(invoiceID uint, base64Data, fileName string) err
 		fmt.Sprintf("comprovante=%s, invoice=%d", dest, invoiceID))
 	a.gerarProximaFatura(invoiceID)
 	return nil
+}
+
+// SalvarLaudoAluno salva o laudo médico (PDF) do aluno na pasta cliente/laudo/
+// e grava o caminho no campo laudo_medico do aluno. Reutiliza a mesma estratégia
+// de armazenamento local usada em SalvarComprovante.
+func (a *App) SalvarLaudoAluno(studentID uint, base64Data, fileName string) error {
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return fmt.Errorf("aluno não encontrado")
+	}
+
+	dir := filepath.Join("cliente", "laudo")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("erro ao criar diretório: %w", err)
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if ext != ".pdf" {
+		return fmt.Errorf("formato de arquivo inválido: apenas o laudo em formato PDF é permitido")
+	}
+
+	dest := filepath.Join(dir, fmt.Sprintf("laudo_aluno_%d%s", studentID, ext))
+
+	_, raw, found := strings.Cut(base64Data, ",")
+	if !found {
+		raw = base64Data
+	}
+
+	data, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return fmt.Errorf("erro ao decodificar arquivo: %w", err)
+	}
+
+	if err := os.WriteFile(dest, data, 0644); err != nil {
+		return fmt.Errorf("erro ao salvar arquivo: %w", err)
+	}
+
+	if err := a.db.Model(&Student{}).Where("id = ?", studentID).Update("laudo_medico", dest).Error; err != nil {
+		return fmt.Errorf("erro ao atualizar aluno: %w", err)
+	}
+
+	a.registrarAuditComDetalhes("salvou_laudo_aluno", studentID, fmt.Sprintf("laudo=%s", dest))
+	return nil
+}
+
+// RemoverLaudoAluno remove o laudo médico do aluno: apaga o arquivo (se existir)
+// e limpa o campo laudo_medico no banco.
+func (a *App) RemoverLaudoAluno(studentID uint) error {
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return fmt.Errorf("aluno não encontrado")
+	}
+
+	if student.LaudoMedico != nil && *student.LaudoMedico != "" {
+		if _, err := os.Stat(*student.LaudoMedico); err == nil {
+			_ = os.Remove(*student.LaudoMedico)
+		}
+	}
+
+	if err := a.db.Model(&Student{}).Where("id = ?", studentID).Update("laudo_medico", nil).Error; err != nil {
+		return fmt.Errorf("erro ao atualizar aluno: %w", err)
+	}
+
+	a.registrarAuditComDetalhes("removeu_laudo_aluno", studentID, "")
+	return nil
+}
+
+// BaixarLaudo abre o laudo médico em PDF do aluno com o visualizador padrão do SO.
+func (a *App) BaixarLaudo(studentID uint) error {
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return fmt.Errorf("aluno não encontrado")
+	}
+	if student.LaudoMedico == nil || *student.LaudoMedico == "" {
+		return fmt.Errorf("aluno não possui laudo anexado")
+	}
+	if _, err := os.Stat(*student.LaudoMedico); err != nil {
+		return fmt.Errorf("arquivo do laudo não encontrado em disco")
+	}
+
+	cmd := exec.Command("rundll32", "url.dll,FileProtocolHandler", *student.LaudoMedico)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("erro ao abrir laudo: %w", err)
+	}
+	return nil
+}
+
+// SalvarFotoAluno salva a foto do aluno (JPEG) em cliente/fotos/ e grava o
+// caminho relativo no campo foto. Segue a mesma estratégia do laudo em PDF:
+// base64 -> arquivo em disco -> caminho no banco.
+func (a *App) SalvarFotoAluno(studentID uint, base64Data string) error {
+	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
+		return fmt.Errorf("permissão negada")
+	}
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return fmt.Errorf("aluno não encontrado")
+	}
+
+	dir := filepath.Join("cliente", "fotos")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("erro ao criar diretório: %w", err)
+	}
+
+	dest := filepath.Join(dir, fmt.Sprintf("foto_aluno_%d.jpg", studentID))
+
+	_, raw, found := strings.Cut(base64Data, ",")
+	if !found {
+		raw = base64Data
+	}
+
+	data, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return fmt.Errorf("erro ao decodificar foto: %w", err)
+	}
+
+	if err := os.WriteFile(dest, data, 0644); err != nil {
+		return fmt.Errorf("erro ao salvar foto: %w", err)
+	}
+
+	if err := a.db.Model(&Student{}).Where("id = ?", studentID).Update("foto", dest).Error; err != nil {
+		return fmt.Errorf("erro ao atualizar aluno: %w", err)
+	}
+
+	a.registrarAuditComDetalhes("salvou_foto_aluno", studentID, fmt.Sprintf("foto=%s", dest))
+	return nil
+}
+
+// RemoverFotoAluno remove a foto do aluno: apaga o arquivo (se existir) e
+// limpa o campo foto no banco.
+func (a *App) RemoverFotoAluno(studentID uint) error {
+	if a.actorCargo != "super_admin" && a.actorCargo != "admin" {
+		return fmt.Errorf("permissão negada")
+	}
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return fmt.Errorf("aluno não encontrado")
+	}
+
+	if student.Foto != nil && *student.Foto != "" {
+		if _, err := os.Stat(*student.Foto); err == nil {
+			_ = os.Remove(*student.Foto)
+		}
+	}
+
+	if err := a.db.Model(&Student{}).Where("id = ?", studentID).Update("foto", nil).Error; err != nil {
+		return fmt.Errorf("erro ao atualizar aluno: %w", err)
+	}
+
+	a.registrarAuditComDetalhes("removeu_foto_aluno", studentID, "")
+	return nil
+}
+
+// ObterFotoAluno retorna a foto do aluno como data URL (base64) para exibição
+// inline no webview, ou uma string vazia quando não há foto.
+func (a *App) ObterFotoAluno(studentID uint) (string, error) {
+	var student Student
+	if err := a.db.First(&student, studentID).Error; err != nil {
+		return "", fmt.Errorf("aluno não encontrado")
+	}
+	if student.Foto == nil || *student.Foto == "" {
+		return "", nil
+	}
+	if _, err := os.Stat(*student.Foto); err != nil {
+		return "", nil
+	}
+	data, err := os.ReadFile(*student.Foto)
+	if err != nil {
+		return "", fmt.Errorf("erro ao ler foto: %w", err)
+	}
+	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(data), nil
 }
 
 func (a *App) CriarInvoiceTeste() error {

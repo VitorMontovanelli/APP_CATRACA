@@ -6,6 +6,10 @@ export function AdicionarAgendamento(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['AdicionarAgendamento'](arg1, arg2, arg3, arg4);
 }
 
+export function AdicionarAgendamentoIndividual(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['App']['AdicionarAgendamentoIndividual'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
 export function AlterarFoto(arg1) {
   return window['go']['main']['App']['AlterarFoto'](arg1);
 }
@@ -38,24 +42,32 @@ export function AtivarUsuario(arg1, arg2) {
   return window['go']['main']['App']['AtivarUsuario'](arg1, arg2);
 }
 
+export function AtualizarAgendamentoIndividual(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['AtualizarAgendamentoIndividual'](arg1, arg2, arg3, arg4);
+}
+
 export function AtualizarConfigGateway(arg1, arg2) {
   return window['go']['main']['App']['AtualizarConfigGateway'](arg1, arg2);
 }
 
-export function AtualizarPlano(arg1, arg2, arg3, arg4, arg5, arg6) {
-  return window['go']['main']['App']['AtualizarPlano'](arg1, arg2, arg3, arg4, arg5, arg6);
+export function AtualizarPlano(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+  return window['go']['main']['App']['AtualizarPlano'](arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 }
 
 export function AtualizarPlanoAluno(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['AtualizarPlanoAluno'](arg1, arg2, arg3, arg4);
 }
 
-export function AtualizarStudent(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
-  return window['go']['main']['App']['AtualizarStudent'](arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+export function AtualizarStudent(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+  return window['go']['main']['App']['AtualizarStudent'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
 export function AtualizarUsuario(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['AtualizarUsuario'](arg1, arg2, arg3, arg4);
+}
+
+export function BaixarLaudo(arg1) {
+  return window['go']['main']['App']['BaixarLaudo'](arg1);
 }
 
 export function BuscarInvoice(arg1) {
@@ -102,16 +114,16 @@ export function CriarPaymentMethod(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['CriarPaymentMethod'](arg1, arg2, arg3, arg4);
 }
 
-export function CriarPlano(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['main']['App']['CriarPlano'](arg1, arg2, arg3, arg4, arg5);
+export function CriarPlano(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['App']['CriarPlano'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function CriarStudent(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['App']['CriarStudent'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-export function CriarStudentComPlano(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
-  return window['go']['main']['App']['CriarStudentComPlano'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+export function CriarStudentComPlano(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
+  return window['go']['main']['App']['CriarStudentComPlano'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
 export function CriarStudentPlan(arg1, arg2, arg3) {
@@ -124,6 +136,10 @@ export function CriarUsuario(arg1, arg2, arg3, arg4, arg5) {
 
 export function DefinirCapacidadeDia(arg1, arg2) {
   return window['go']['main']['App']['DefinirCapacidadeDia'](arg1, arg2);
+}
+
+export function DefinirLimiteDiarioIndividual(arg1) {
+  return window['go']['main']['App']['DefinirLimiteDiarioIndividual'](arg1);
 }
 
 export function DeletarDadosTeste() {
@@ -156,6 +172,14 @@ export function ListarAccessLogs() {
 
 export function ListarAgendamentosDia(arg1) {
   return window['go']['main']['App']['ListarAgendamentosDia'](arg1);
+}
+
+export function ListarAgendamentosIndividuaisDia(arg1) {
+  return window['go']['main']['App']['ListarAgendamentosIndividuaisDia'](arg1);
+}
+
+export function ListarAgendamentosIndividuaisMes(arg1, arg2) {
+  return window['go']['main']['App']['ListarAgendamentosIndividuaisMes'](arg1, arg2);
 }
 
 export function ListarAgendamentosMes(arg1, arg2) {
@@ -222,12 +246,20 @@ export function MeuPerfil() {
   return window['go']['main']['App']['MeuPerfil']();
 }
 
+export function ObterConfigAgendaIndividual() {
+  return window['go']['main']['App']['ObterConfigAgendaIndividual']();
+}
+
 export function ObterConfigTelegram() {
   return window['go']['main']['App']['ObterConfigTelegram']();
 }
 
 export function ObterEstatisticasAcesso(arg1) {
   return window['go']['main']['App']['ObterEstatisticasAcesso'](arg1);
+}
+
+export function ObterFotoAluno(arg1) {
+  return window['go']['main']['App']['ObterFotoAluno'](arg1);
 }
 
 export function ObterMetricasHome() {
@@ -238,12 +270,32 @@ export function RemoverAgendamento(arg1) {
   return window['go']['main']['App']['RemoverAgendamento'](arg1);
 }
 
+export function RemoverAgendamentoIndividual(arg1) {
+  return window['go']['main']['App']['RemoverAgendamentoIndividual'](arg1);
+}
+
+export function RemoverFotoAluno(arg1) {
+  return window['go']['main']['App']['RemoverFotoAluno'](arg1);
+}
+
+export function RemoverLaudoAluno(arg1) {
+  return window['go']['main']['App']['RemoverLaudoAluno'](arg1);
+}
+
 export function SalvarComprovante(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
 }
 
 export function SalvarConfigTelegram(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarConfigTelegram'](arg1, arg2, arg3);
+}
+
+export function SalvarFotoAluno(arg1, arg2) {
+  return window['go']['main']['App']['SalvarFotoAluno'](arg1, arg2);
+}
+
+export function SalvarLaudoAluno(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SalvarLaudoAluno'](arg1, arg2, arg3);
 }
 
 export function SalvarPermissoesUsuario(arg1, arg2) {

@@ -15,6 +15,7 @@ interface Plan {
   description: string;
   duration_days: number;
   price_cents: number;
+  preco_cartao_cents?: number | null;
   grace_period_days: number;
   active: boolean;
   created_at: string;
@@ -27,6 +28,14 @@ interface PlanosProps {
 
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatPrecos(p: Plan): string {
+  const pix = formatCents(p.price_cents);
+  if (p.preco_cartao_cents != null) {
+    return `${pix} (pix) / ${formatCents(p.preco_cartao_cents)} (cartão)`;
+  }
+  return `${pix} (pix/dinheiro)`;
 }
 
 function formatDate(d: string): string {
@@ -45,6 +54,7 @@ function Planos({ user }: PlanosProps) {
   const [description, setDescription] = useState("");
   const [durationDays, setDurationDays] = useState(30);
   const [priceCents, setPriceCents] = useState(0);
+  const [precoCartaoCents, setPrecoCartaoCents] = useState<number | null>(null);
   const [gracePeriodDays, setGracePeriodDays] = useState(5);
   const [error, setError] = useState("");
 
@@ -102,6 +112,7 @@ function Planos({ user }: PlanosProps) {
     setDescription(p.description);
     setDurationDays(p.duration_days);
     setPriceCents(p.price_cents);
+    setPrecoCartaoCents(p.preco_cartao_cents ?? null);
     setGracePeriodDays(p.grace_period_days);
     setError("");
     setShowModal(true);
@@ -113,6 +124,7 @@ function Planos({ user }: PlanosProps) {
     setName("");
     setDescription("");
     setPriceCents(0);
+    setPrecoCartaoCents(null);
     setDurationDays(30);
     setGracePeriodDays(5);
     setError("");
@@ -123,9 +135,9 @@ function Planos({ user }: PlanosProps) {
     setError("");
     try {
       if (editingPlan) {
-        await AtualizarPlano(editingPlan.id, name, description, durationDays, priceCents, gracePeriodDays);
+        await AtualizarPlano(editingPlan.id, name, description, durationDays, priceCents, gracePeriodDays, precoCartaoCents);
       } else {
-        await CriarPlano(name, description, durationDays, priceCents, gracePeriodDays);
+        await CriarPlano(name, description, durationDays, priceCents, gracePeriodDays, precoCartaoCents);
       }
       fecharModal();
       await load();
@@ -238,7 +250,7 @@ function Planos({ user }: PlanosProps) {
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{p.description || "Sem descrição."}</div>
                     <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4, fontWeight: 600 }}>
-                      DURAÇÃO: {p.duration_days} dias · PREÇO: {formatCents(p.price_cents)} · CARÊNCIA: {p.grace_period_days}d
+                      DURAÇÃO: {p.duration_days} dias · PREÇO: {formatPrecos(p)} · CARÊNCIA: {p.grace_period_days}d
                     </div>
                   </div>
                 </div>
@@ -413,7 +425,7 @@ function Planos({ user }: PlanosProps) {
                     />
                   </div>
                   <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vmd-label">Preço</label>
+                    <label className="vmd-label">Preço (pix/dinheiro)</label>
                     <input
                       type="text"
                       value={formatCents(priceCents)}
@@ -436,6 +448,21 @@ function Planos({ user }: PlanosProps) {
                       className="vmd-input"
                     />
                   </div>
+                </div>
+
+                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
+                  <label className="vmd-label">Preço no Cartão (opcional)</label>
+                  <input
+                    type="text"
+                    value={precoCartaoCents != null ? formatCents(precoCartaoCents) : ""}
+                    placeholder="Deixe vazio se não houver valor no cartão"
+                    onChange={(e) => {
+                      const rawDigits = e.target.value.replace(/\D/g, "");
+                      const cents = rawDigits ? parseInt(rawDigits, 10) : null;
+                      setPrecoCartaoCents(cents);
+                    }}
+                    className="vmd-input"
+                  />
                 </div>
 
 

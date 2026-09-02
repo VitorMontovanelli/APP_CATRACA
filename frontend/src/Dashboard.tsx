@@ -12,7 +12,7 @@ interface User {
   permissoes?: string;
 }
 
-type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "catraca" | "cobranca" | "acesso" | "backup";
+type Page = "home" | "usuarios" | "alunos" | "logs" | "planos" | "metodos_pagamento" | "financeiro" | "agenda" | "cobranca" | "acesso" | "backup";
 
 interface DashboardProps {
   user: User;
@@ -38,7 +38,7 @@ const navGroups: NavGroup[] = [
     title: "Principal",
     items: [
       { page: "home", label: "Visão Geral", icon: "📊", minCargo: "admin" },
-      { page: "catraca", label: "Agenda Calendário", icon: "📅", minCargo: "admin" },
+      { page: "agenda", label: "Calendários de Agendamento", icon: "📅", minCargo: "admin" },
     ],
   },
   {

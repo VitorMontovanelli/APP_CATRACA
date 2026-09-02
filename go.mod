@@ -48,3 +48,8 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.53.0 // indirect
 )
+
+// Fork local do go-webview2: removemos a limpeza de WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+// em preventEnvAndRegistryOverrides() para podermos habilitar a câmera (getUserMedia)
+// no WebView2 via os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--use-fake-ui-for-media-stream").
+replace github.com/wailsapp/go-webview2 => ./third_party/go-webview2
