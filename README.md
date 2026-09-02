@@ -1,4 +1,4 @@
-# Catraca-App
+# Agendamento-App
 
 **Versão:** 1.0.0
 
@@ -6,7 +6,7 @@ Sistema desktop de controle de acesso biométrico e gestão financeira para acad
 
 ## Funcionalidades
 
-- **Catraca Virtual** — liberação/negação de acesso por biometria simulada
+- **Agendamento** — matricula nas aulas, acesso as aulas e disponibilidades das aulas
 - **Alunos** — cadastro completo com planos, vencimentos e histórico
 - **Financeiro** — faturas, confirmação/cancelamento de pagamento, upload de comprovantes (PDF via base64)
 - **Cobrança** — lista de faturas vencidas com upload de comprovante
