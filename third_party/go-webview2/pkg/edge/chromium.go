@@ -139,6 +139,8 @@ func NewChromium() *Chromium {
 		pinner.Pin(e.containsFullScreenElementChanged)
 	*/
 	e.permissions = make(map[CoreWebView2PermissionKind]CoreWebView2PermissionState)
+	e.permissions[CoreWebView2PermissionKindCamera] = CoreWebView2PermissionStateAllow
+	e.permissions[CoreWebView2PermissionKindMicrophone] = CoreWebView2PermissionStateAllow
 	e.globalErrorCallback = globalErrorHandler
 	return e
 }
@@ -469,7 +471,11 @@ func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2Perm
 		var ok bool
 		result, ok = e.permissions[kind]
 		if !ok {
-			result = CoreWebView2PermissionStateDefault
+			if kind == CoreWebView2PermissionKindCamera || kind == CoreWebView2PermissionKindMicrophone {
+				result = CoreWebView2PermissionStateAllow
+			} else {
+				result = CoreWebView2PermissionStateDefault
+			}
 		}
 	}
 	err = args.PutState(result)

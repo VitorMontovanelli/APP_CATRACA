@@ -102,6 +102,10 @@ export function CancelarStudentPlan(arg1) {
   return window['go']['main']['App']['CancelarStudentPlan'](arg1);
 }
 
+export function CapturarFotoWebcam() {
+  return window['go']['main']['App']['CapturarFotoWebcam']();
+}
+
 export function ConfirmarPagamento(arg1, arg2, arg3) {
   return window['go']['main']['App']['ConfirmarPagamento'](arg1, arg2, arg3);
 }

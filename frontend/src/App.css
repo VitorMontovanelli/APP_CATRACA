@@ -58,6 +58,7 @@ html, body, #root {
   color: var(--text-main);
   font-family: var(--font-sans);
   font-size: 13px;
+  color-scheme: dark;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -215,6 +216,15 @@ h1, h2, h3, h4, h5, h6 {
 .vmd-input:focus, .vmd-select:focus, .vmd-textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(199, 157, 51, 0.2);
+}
+.vmd-select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+.vmd-select option, .vmd-select optgroup {
+  background-color: #121212;
+  color: #f3f4f6;
+  padding: 8px 12px;
 }
 .vmd-input::placeholder, .vmd-textarea::placeholder {
   color: var(--text-dim);

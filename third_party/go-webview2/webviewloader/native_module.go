@@ -157,6 +157,9 @@ func preventEnvAndRegistryOverrides(browserFolder, userDataFolder *uint16, addit
 	os.Setenv("WEBVIEW2_PIPE_FOR_SCRIPT_DEBUGGER", "")
 
 	// Set these overrides to the values or empty to prevent registry and external env overrides
+	if existing := os.Getenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"); existing != "" && additionalBrowserArgs == "" {
+		additionalBrowserArgs = existing
+	}
 	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", additionalBrowserArgs)
 	os.Setenv("WEBVIEW2_RELEASE_CHANNEL_PREFERENCE", "0")
 	os.Setenv("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER", windows.UTF16PtrToString(browserFolder))

@@ -14,6 +14,7 @@ import {
   SalvarFotoAluno,
   RemoverFotoAluno,
   ObterFotoAluno,
+  CapturarFotoWebcam,
 } from "../../wailsjs/go/main/App";
 
 interface StudentComPlano {
@@ -127,8 +128,10 @@ function Alunos({ user }: AlunosProps) {
   const [fotoDataUrl, setFotoDataUrl] = useState("");
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [loadingCameraGo, setLoadingCameraGo] = useState(false);
   const [photoChanged, setPhotoChanged] = useState(false);
   const [photoRemoved, setPhotoRemoved] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -244,6 +247,38 @@ function Alunos({ user }: AlunosProps) {
 
   function takePhoto() {
     captureFrame();
+  }
+
+  async function handleCapturarGo() {
+    setError("");
+    setLoadingCameraGo(true);
+    try {
+      const dataUrl = await CapturarFotoWebcam();
+      if (dataUrl) {
+        setFotoDataUrl(dataUrl);
+        setPhotoChanged(true);
+        setPhotoRemoved(false);
+        stopCamera();
+      }
+    } catch (e: any) {
+      setError("Erro ao capturar câmera pelo Go: " + (e?.message || String(e)));
+    } finally {
+      setLoadingCameraGo(false);
+    }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    fileToBase64(file).then((b64) => {
+      setFotoDataUrl(b64);
+      setPhotoChanged(true);
+      setPhotoRemoved(false);
+      stopCamera();
+    }).catch((err) => {
+      setError("Erro ao carregar arquivo de foto: " + String(err));
+    });
+    e.target.value = "";
   }
 
   async function startCamera() {
@@ -623,6 +658,15 @@ function Alunos({ user }: AlunosProps) {
                       </div>
                     )}
                   </div>
+
+                  <input
+                    ref={fotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: "none" }}
+                  />
+
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
                     {cameraActive && (
                       <>
@@ -640,20 +684,50 @@ function Alunos({ user }: AlunosProps) {
                         </button>
                       </>
                     )}
-                    {!cameraActive && !fotoDataUrl && (
-                      <button type="button" onClick={startCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 14px", height: 32 }}>
-                        📷 Tirar Foto
-                      </button>
-                    )}
-                    {!cameraActive && fotoDataUrl && (
-                      <button type="button" onClick={startCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 14px", height: 32 }}>
-                        🔄 Tirar Novamente
-                      </button>
-                    )}
-                    {!cameraActive && fotoDataUrl && (
-                      <button type="button" onClick={clearPhoto} className="vmd-btn vmd-btn-danger" style={{ padding: "6px 12px", height: 32, background: "transparent" }}>
-                        Remover
-                      </button>
+                    {!cameraActive && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCapturarGo}
+                          disabled={loadingCameraGo}
+                          className="vmd-btn vmd-btn-primary"
+                          style={{ padding: "6px 14px", height: 32 }}
+                          title="Captura direta pelo Go (sem bloqueios do navegador)"
+                        >
+                          {loadingCameraGo ? "⏳ Capturando..." : "📸 Capturar pelo Go"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={startCamera}
+                          className="vmd-btn vmd-btn-secondary"
+                          style={{ padding: "6px 12px", height: 32 }}
+                          title="Abrir prévia de vídeo na tela"
+                        >
+                          📹 Abrir Vídeo
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => fotoInputRef.current?.click()}
+                          className="vmd-btn vmd-btn-secondary"
+                          style={{ padding: "6px 12px", height: 32 }}
+                          title="Selecionar foto salva no computador"
+                        >
+                          📁 Escolher Arquivo
+                        </button>
+
+                        {fotoDataUrl && (
+                          <button
+                            type="button"
+                            onClick={clearPhoto}
+                            className="vmd-btn vmd-btn-danger"
+                            style={{ padding: "6px 12px", height: 32, background: "transparent" }}
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>
@@ -661,7 +735,7 @@ function Alunos({ user }: AlunosProps) {
                       ? (cameraReady
                           ? "Clique em \"Tirar Foto\" para capturar."
                           : "Aguardando imagem da câmera...")
-                      : "Abra a câmera para posicionar o aluno e clique em \"Tirar Foto\" para capturar."}
+                      : "Escolha 'Capturar pelo Go' para foto instantânea, 'Abrir Vídeo' para prévia ou 'Escolher Arquivo'."}
                   </div>
                 </div>
 
@@ -741,6 +815,7 @@ function Alunos({ user }: AlunosProps) {
                       value={planId}
                       onChange={(e) => setPlanId(Number(e.target.value))}
                       className="vmd-select"
+                      style={{ colorScheme: "dark" }}
                     >
                       <option value={0}>Sem plano ativo</option>
                       {plans.map((pl) => (
@@ -756,6 +831,7 @@ function Alunos({ user }: AlunosProps) {
                       value={formaPagamentoId}
                       onChange={(e) => setFormaPagamentoId(Number(e.target.value))}
                       className="vmd-select"
+                      style={{ colorScheme: "dark" }}
                     >
                       <option value={0}>Selecione...</option>
                       {methods.map((m) => (

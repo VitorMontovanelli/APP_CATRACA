@@ -52,6 +52,8 @@ export function CancelarInvoice(arg1:number):Promise<void>;
 
 export function CancelarStudentPlan(arg1:number):Promise<void>;
 
+export function CapturarFotoWebcam():Promise<string>;
+
 export function ConfirmarPagamento(arg1:number,arg2:number,arg3:number):Promise<void>;
 
 export function CriarInvoiceTeste():Promise<void>;
