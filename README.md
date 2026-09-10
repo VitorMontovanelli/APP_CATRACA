@@ -47,7 +47,7 @@ wails build
 ## Estrutura do projeto
 
 ```
-catraca-app/
+agendamento-app/
 ├── app.go             # Lógica de negócio (Go)
 ├── db.go              # Inicialização do banco e seed
 ├── models.go          # Modelos GORM
