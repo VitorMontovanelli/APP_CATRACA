@@ -106,6 +106,10 @@ export function CapturarFotoWebcam() {
   return window['go']['main']['App']['CapturarFotoWebcam']();
 }
 
+export function CapturarSnapshotStream() {
+  return window['go']['main']['App']['CapturarSnapshotStream']();
+}
+
 export function ConfirmarPagamento(arg1, arg2, arg3) {
   return window['go']['main']['App']['ConfirmarPagamento'](arg1, arg2, arg3);
 }
@@ -168,6 +172,10 @@ export function EnviarBackupTelegram() {
 
 export function GerarInvoice(arg1) {
   return window['go']['main']['App']['GerarInvoice'](arg1);
+}
+
+export function IniciarStreamWebcam() {
+  return window['go']['main']['App']['IniciarStreamWebcam']();
 }
 
 export function ListarAccessLogs() {
@@ -268,6 +276,10 @@ export function ObterFotoAluno(arg1) {
 
 export function ObterMetricasHome() {
   return window['go']['main']['App']['ObterMetricasHome']();
+}
+
+export function PararStreamWebcam() {
+  return window['go']['main']['App']['PararStreamWebcam']();
 }
 
 export function RemoverAgendamento(arg1) {

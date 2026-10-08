@@ -54,6 +54,8 @@ export function CancelarStudentPlan(arg1:number):Promise<void>;
 
 export function CapturarFotoWebcam():Promise<string>;
 
+export function CapturarSnapshotStream():Promise<string>;
+
 export function ConfirmarPagamento(arg1:number,arg2:number,arg3:number):Promise<void>;
 
 export function CriarInvoiceTeste():Promise<void>;
@@ -85,6 +87,8 @@ export function DeletarUsuario(arg1:number):Promise<void>;
 export function EnviarBackupTelegram():Promise<string>;
 
 export function GerarInvoice(arg1:number):Promise<main.Invoice>;
+
+export function IniciarStreamWebcam():Promise<string>;
 
 export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
 
@@ -135,6 +139,8 @@ export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEs
 export function ObterFotoAluno(arg1:number):Promise<string>;
 
 export function ObterMetricasHome():Promise<main.MetricasHome>;
+
+export function PararStreamWebcam():Promise<void>;
 
 export function RemoverAgendamento(arg1:number):Promise<void>;
 

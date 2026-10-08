@@ -1,6 +1,7 @@
 package main
 
 import (
+	adapters "catraca-app/internal/student/adapters"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -89,4 +90,22 @@ func (a *App) ObterFotoAluno(studentID uint) (string, error) {
 		return "", fmt.Errorf("erro ao ler foto: %w", err)
 	}
 	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(data), nil
+}
+
+// IniciarStreamWebcam inicia o servidor MJPEG local nativo e retorna a URL do stream ao vivo.
+func (a *App) IniciarStreamWebcam() string {
+	streamer := adapters.GetCameraStreamer()
+	return streamer.GetStreamURL()
+}
+
+// PararStreamWebcam desliga o processo da webcam e desliga o LED da câmera.
+func (a *App) PararStreamWebcam() {
+	streamer := adapters.GetCameraStreamer()
+	streamer.Stop()
+}
+
+// CapturarSnapshotStream obtém o frame mais recente da transmissão em tempo real.
+func (a *App) CapturarSnapshotStream() (string, error) {
+	streamer := adapters.GetCameraStreamer()
+	return streamer.CaptureSnapshot()
 }

@@ -14,7 +14,9 @@ import {
   SalvarFotoAluno,
   RemoverFotoAluno,
   ObterFotoAluno,
-  CapturarFotoWebcam,
+  IniciarStreamWebcam,
+  PararStreamWebcam,
+  CapturarSnapshotStream,
 } from "../../wailsjs/go/main/App";
 
 interface StudentComPlano {
@@ -127,6 +129,8 @@ function Alunos({ user }: AlunosProps) {
 
   const [fotoDataUrl, setFotoDataUrl] = useState("");
   const [loadingCameraGo, setLoadingCameraGo] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [liveStreamUrl, setLiveStreamUrl] = useState("");
   const [photoChanged, setPhotoChanged] = useState(false);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +143,8 @@ function Alunos({ user }: AlunosProps) {
   }, []);
 
   useEffect(() => { load(); }, []);
+
+
 
 
 
@@ -178,6 +184,7 @@ function Alunos({ user }: AlunosProps) {
   }
 
   function openCreate() {
+    stopCamera();
     setEditId(null);
     setNome(""); setCpf(""); setDataNasc(""); setTelefone(""); setTelefoneUrgencia(""); setEmail("");
     setFormaPagamentoId(0); setPlanId(0); setDueDay(5);
@@ -187,6 +194,7 @@ function Alunos({ user }: AlunosProps) {
   }
 
   async function openEdit(s: StudentComPlano) {
+    stopCamera();
     setEditId(s.id);
     setNome(s.nome); setCpf(s.cpf);
     setDataNasc(s.data_nascimento || "");
@@ -213,22 +221,44 @@ function Alunos({ user }: AlunosProps) {
     });
   }
 
-  async function handleCapturarGo() {
+  function stopCamera() {
+    setCameraActive(false);
+    setLiveStreamUrl("");
+    PararStreamWebcam().catch(() => {});
+  }
+
+  async function takePhoto() {
     setError("");
-    setLoadingCameraGo(true);
     try {
-      const dataUrl = await CapturarFotoWebcam();
-      if (dataUrl) {
-        setFotoDataUrl(dataUrl);
+      const b64 = await CapturarSnapshotStream();
+      stopCamera();
+      if (b64) {
+        setFotoDataUrl(b64);
         setPhotoChanged(true);
         setPhotoRemoved(false);
       }
     } catch (e: any) {
-      setError("Erro ao capturar da webcam: " + (e?.message || String(e)));
+      setError("Erro ao disparar foto: " + (e?.message || String(e)));
+      stopCamera();
+    }
+  }
+
+  async function handleTirarFotoClick() {
+    setError("");
+    setLoadingCameraGo(true);
+    try {
+      const url = await IniciarStreamWebcam();
+      setLiveStreamUrl(url);
+      setCameraActive(true);
+    } catch (e: any) {
+      setError("Erro ao abrir webcam: " + (e?.message || String(e)));
+      stopCamera();
     } finally {
       setLoadingCameraGo(false);
     }
   }
+
+
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -244,6 +274,7 @@ function Alunos({ user }: AlunosProps) {
   }
 
   function clearPhoto() {
+    stopCamera();
     setFotoDataUrl("");
     setPhotoChanged(false);
     if (editId != null) setPhotoRemoved(true);
@@ -546,11 +577,11 @@ function Alunos({ user }: AlunosProps) {
       </div>
 
       {showModal && (
-        <div className="vmd-modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="vmd-modal-overlay" onClick={() => { stopCamera(); setShowModal(false); }}>
           <div className="vmd-modal-content" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
             <div className="vmd-modal-header">
               <h3 style={{ fontSize: 16, margin: 0 }}>{editId ? "Editar Cadastro de Aluno" : "Matricular Novo Aluno"}</h3>
-              <button onClick={() => setShowModal(false)} className="vmd-btn vmd-btn-ghost" style={{ padding: 4, minWidth: "auto" }}>
+              <button onClick={() => { stopCamera(); setShowModal(false); }} className="vmd-btn vmd-btn-ghost" style={{ padding: 4, minWidth: "auto" }}>
                 ✕
               </button>
             </div>
@@ -561,15 +592,67 @@ function Alunos({ user }: AlunosProps) {
                   <label className="vmd-label" style={{ alignSelf: "center" }}>Foto do Aluno</label>
                   <div
                     style={{
-                      width: 360, height: 360, borderRadius: 12,
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid var(--border-color)",
+                      width: 360,
+                      height: 360,
+                      borderRadius: 12,
+                      background: "rgba(0, 0, 0, 0.3)",
+                      border: cameraActive ? "2px solid #3b82f6" : "1px solid var(--border-color)",
                       overflow: "hidden",
-                      display: "flex", alignItems: "center", justifyContent: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       position: "relative",
+                      boxShadow: cameraActive ? "0 0 16px rgba(59, 130, 246, 0.3)" : "none",
+                      transition: "border 0.2s ease, box-shadow 0.2s ease",
                     }}
                   >
-                    {fotoDataUrl ? (
+                    {cameraActive && liveStreamUrl ? (
+                      <>
+                        <img
+                          src={liveStreamUrl}
+                          alt="Webcam ao vivo"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            transform: "scaleX(-1)",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: "65%",
+                            height: "80%",
+                            border: "2px dashed rgba(255, 255, 255, 0.75)",
+                            borderRadius: "50%",
+                            pointerEvents: "none",
+                            boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.25)",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 10,
+                            left: 12,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            background: "rgba(0, 0, 0, 0.65)",
+                            padding: "3px 8px",
+                            borderRadius: 12,
+                            fontSize: 11,
+                            color: "#fff",
+                            fontWeight: 500,
+                          }}
+                        >
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                          WEBCAM AO VIVO
+                        </div>
+                      </>
+                    ) : fotoDataUrl ? (
                       <img src={fotoDataUrl} alt="Foto do aluno" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "var(--text-dim)" }}>
@@ -588,41 +671,73 @@ function Alunos({ user }: AlunosProps) {
                   />
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                    <button
-                      type="button"
-                      onClick={handleCapturarGo}
-                      disabled={loadingCameraGo}
-                      className="vmd-btn vmd-btn-primary"
-                      style={{ padding: "6px 16px", height: 34, fontWeight: 500 }}
-                      title="Capturar foto diretamente da webcam conectada (hardware)"
-                    >
-                      {loadingCameraGo ? "⏳ Acessando Webcam..." : "📸 Tirar Foto"}
-                    </button>
+                    {cameraActive ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={takePhoto}
+                          className="vmd-btn vmd-btn-primary"
+                          style={{
+                            padding: "6px 20px",
+                            height: 36,
+                            fontWeight: 600,
+                            background: "#10b981",
+                            borderColor: "#059669",
+                          }}
+                        >
+                          📸 Disparar Foto
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => fotoInputRef.current?.click()}
-                      className="vmd-btn vmd-btn-secondary"
-                      style={{ padding: "6px 14px", height: 34 }}
-                      title="Selecionar foto já existente no computador"
-                    >
-                      📁 Escolher Arquivo
-                    </button>
+                        <button
+                          type="button"
+                          onClick={stopCamera}
+                          className="vmd-btn vmd-btn-secondary"
+                          style={{ padding: "6px 14px", height: 36 }}
+                        >
+                          ✕ Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleTirarFotoClick}
+                          disabled={loadingCameraGo}
+                          className="vmd-btn vmd-btn-primary"
+                          style={{ padding: "6px 16px", height: 34, fontWeight: 500 }}
+                          title="Abrir a webcam para posicionar o rosto e tirar foto em tempo real"
+                        >
+                          {loadingCameraGo ? "⏳ Acessando Webcam..." : "📸 Tirar Foto"}
+                        </button>
 
-                    {fotoDataUrl && (
-                      <button
-                        type="button"
-                        onClick={clearPhoto}
-                        className="vmd-btn vmd-btn-danger"
-                        style={{ padding: "6px 12px", height: 34, background: "transparent" }}
-                        title="Remover foto atual"
-                      >
-                        🗑️ Remover
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => fotoInputRef.current?.click()}
+                          className="vmd-btn vmd-btn-secondary"
+                          style={{ padding: "6px 14px", height: 34 }}
+                          title="Selecionar foto já existente no computador"
+                        >
+                          📁 Escolher Arquivo
+                        </button>
+
+                        {fotoDataUrl && (
+                          <button
+                            type="button"
+                            onClick={clearPhoto}
+                            className="vmd-btn vmd-btn-danger"
+                            style={{ padding: "6px 12px", height: 34, background: "transparent" }}
+                            title="Remover foto atual"
+                          >
+                            🗑️ Remover
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>
-                    Clique em "Tirar Foto" para capturar da webcam conectada ou "Escolher Arquivo" para usar uma foto existente.
+                    {cameraActive
+                      ? "Posicione o rosto dentro da linha oval e clique em 'Disparar Foto'."
+                      : "Clique em 'Tirar Foto' para abrir a webcam ao vivo ou 'Escolher Arquivo' para carregar do computador."}
                   </div>
                 </div>
 
@@ -783,7 +898,7 @@ function Alunos({ user }: AlunosProps) {
             </div>
 
             <div className="vmd-modal-footer">
-              <button onClick={() => setShowModal(false)} className="vmd-btn vmd-btn-secondary">
+              <button onClick={() => { stopCamera(); setShowModal(false); }} className="vmd-btn vmd-btn-secondary">
                 Cancelar
               </button>
               <button onClick={handleSave} className="vmd-btn vmd-btn-primary">
