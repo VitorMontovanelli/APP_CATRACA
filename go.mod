@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/glebarez/sqlite v1.11.0
-	github.com/wailsapp/wails/v2 v2.15.0
+	github.com/wailsapp/wails/v2 v2.16.0
 	golang.org/x/crypto v0.53.0
 	gorm.io/gorm v1.31.2
 )

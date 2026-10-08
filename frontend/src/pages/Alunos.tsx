@@ -126,14 +126,10 @@ function Alunos({ user }: AlunosProps) {
   const laudoInputRef = useRef<HTMLInputElement>(null);
 
   const [fotoDataUrl, setFotoDataUrl] = useState("");
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
   const [loadingCameraGo, setLoadingCameraGo] = useState(false);
   const [photoChanged, setPhotoChanged] = useState(false);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   const canManage = user.cargo === "super_admin" || user.cargo === "admin";
 
@@ -144,9 +140,7 @@ function Alunos({ user }: AlunosProps) {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    if (!showModal) stopCamera();
-  }, [showModal]);
+
 
   async function handleRegistrarPagamento(studentPlanId: number) {
     setLoadingInvoice(studentPlanId);
@@ -219,36 +213,6 @@ function Alunos({ user }: AlunosProps) {
     });
   }
 
-  function stopCamera() {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraActive(false);
-    setCameraReady(false);
-  }
-
-  function captureFrame() {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) { stopCamera(); return; }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) { stopCamera(); return; }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    stopCamera();
-    setFotoDataUrl(dataUrl);
-    setPhotoChanged(true);
-    setPhotoRemoved(false);
-  }
-
-  function takePhoto() {
-    captureFrame();
-  }
-
   async function handleCapturarGo() {
     setError("");
     setLoadingCameraGo(true);
@@ -258,10 +222,9 @@ function Alunos({ user }: AlunosProps) {
         setFotoDataUrl(dataUrl);
         setPhotoChanged(true);
         setPhotoRemoved(false);
-        stopCamera();
       }
     } catch (e: any) {
-      setError("Erro ao capturar câmera pelo Go: " + (e?.message || String(e)));
+      setError("Erro ao capturar da webcam: " + (e?.message || String(e)));
     } finally {
       setLoadingCameraGo(false);
     }
@@ -274,48 +237,13 @@ function Alunos({ user }: AlunosProps) {
       setFotoDataUrl(b64);
       setPhotoChanged(true);
       setPhotoRemoved(false);
-      stopCamera();
     }).catch((err) => {
       setError("Erro ao carregar arquivo de foto: " + String(err));
     });
     e.target.value = "";
   }
 
-  async function startCamera() {
-    setError("");
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Este dispositivo não suporta acesso à câmera.");
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      streamRef.current = stream;
-      setCameraActive(true);
-      setCameraReady(false);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-        const checkReady = () => {
-          if (videoRef.current && videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
-            setCameraReady(true);
-          } else {
-            setTimeout(checkReady, 100);
-          }
-        };
-        setTimeout(checkReady, 100);
-      }
-    } catch (e: any) {
-      const msg = e?.message?.toLowerCase?.() || "";
-      let friendly = "Não foi possível acessar a câmera. Verifique as permissões do navegador.";
-      if (msg.includes("notallowed") || msg.includes("denied") || msg.includes("permission")) {
-        friendly = "Acesso à câmera negado. Habilite a câmera nas permissões do Windows/do aplicativo e tente novamente.";
-      }
-      setError(friendly);
-    }
-  }
-
   function clearPhoto() {
-    stopCamera();
     setFotoDataUrl("");
     setPhotoChanged(false);
     if (editId != null) setPhotoRemoved(true);
@@ -641,15 +569,7 @@ function Alunos({ user }: AlunosProps) {
                       position: "relative",
                     }}
                   >
-                    {cameraActive ? (
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : fotoDataUrl ? (
+                    {fotoDataUrl ? (
                       <img src={fotoDataUrl} alt="Foto do aluno" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "var(--text-dim)" }}>
@@ -668,74 +588,41 @@ function Alunos({ user }: AlunosProps) {
                   />
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                    {cameraActive && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={takePhoto}
-                          disabled={!cameraReady}
-                          className="vmd-btn vmd-btn-primary"
-                          style={{ padding: "6px 14px", height: 32, opacity: cameraReady ? 1 : 0.5 }}
-                        >
-                          📷 Tirar Foto
-                        </button>
-                        <button type="button" onClick={stopCamera} className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 12px", height: 32 }}>
-                          Cancelar Câmera
-                        </button>
-                      </>
-                    )}
-                    {!cameraActive && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleCapturarGo}
-                          disabled={loadingCameraGo}
-                          className="vmd-btn vmd-btn-primary"
-                          style={{ padding: "6px 14px", height: 32 }}
-                          title="Captura direta pelo Go (sem bloqueios do navegador)"
-                        >
-                          {loadingCameraGo ? "⏳ Capturando..." : "📸 Capturar pelo Go"}
-                        </button>
+                    <button
+                      type="button"
+                      onClick={handleCapturarGo}
+                      disabled={loadingCameraGo}
+                      className="vmd-btn vmd-btn-primary"
+                      style={{ padding: "6px 16px", height: 34, fontWeight: 500 }}
+                      title="Capturar foto diretamente da webcam conectada (hardware)"
+                    >
+                      {loadingCameraGo ? "⏳ Acessando Webcam..." : "📸 Tirar Foto"}
+                    </button>
 
-                        <button
-                          type="button"
-                          onClick={startCamera}
-                          className="vmd-btn vmd-btn-secondary"
-                          style={{ padding: "6px 12px", height: 32 }}
-                          title="Abrir prévia de vídeo na tela"
-                        >
-                          📹 Abrir Vídeo
-                        </button>
+                    <button
+                      type="button"
+                      onClick={() => fotoInputRef.current?.click()}
+                      className="vmd-btn vmd-btn-secondary"
+                      style={{ padding: "6px 14px", height: 34 }}
+                      title="Selecionar foto já existente no computador"
+                    >
+                      📁 Escolher Arquivo
+                    </button>
 
-                        <button
-                          type="button"
-                          onClick={() => fotoInputRef.current?.click()}
-                          className="vmd-btn vmd-btn-secondary"
-                          style={{ padding: "6px 12px", height: 32 }}
-                          title="Selecionar foto salva no computador"
-                        >
-                          📁 Escolher Arquivo
-                        </button>
-
-                        {fotoDataUrl && (
-                          <button
-                            type="button"
-                            onClick={clearPhoto}
-                            className="vmd-btn vmd-btn-danger"
-                            style={{ padding: "6px 12px", height: 32, background: "transparent" }}
-                          >
-                            Remover
-                          </button>
-                        )}
-                      </>
+                    {fotoDataUrl && (
+                      <button
+                        type="button"
+                        onClick={clearPhoto}
+                        className="vmd-btn vmd-btn-danger"
+                        style={{ padding: "6px 12px", height: 34, background: "transparent" }}
+                        title="Remover foto atual"
+                      >
+                        🗑️ Remover
+                      </button>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center" }}>
-                    {cameraActive
-                      ? (cameraReady
-                          ? "Clique em \"Tirar Foto\" para capturar."
-                          : "Aguardando imagem da câmera...")
-                      : "Escolha 'Capturar pelo Go' para foto instantânea, 'Abrir Vídeo' para prévia ou 'Escolher Arquivo'."}
+                    Clique em "Tirar Foto" para capturar da webcam conectada ou "Escolher Arquivo" para usar uma foto existente.
                   </div>
                 </div>
 
