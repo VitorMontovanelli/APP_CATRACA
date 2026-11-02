@@ -12,9 +12,11 @@ node_modules
 frontend/node_modules
 
 # Build
-dist
-dist-ssr
+/dist
+/dist-ssr
 build/
+frontend/dist/*
+!frontend/dist/.gitkeep
 *.exe
 *.exe~
 *.dll
@@ -22,9 +24,6 @@ build/
 *.dylib
 *.test
 *.out
-
-# Go
-go.sum
 
 # Banco SQLite
 catraca.db

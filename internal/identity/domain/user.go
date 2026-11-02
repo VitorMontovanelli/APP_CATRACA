@@ -11,7 +11,7 @@ import (
 var (
 	ErrInvalidCredentials = errors.New("e-mail ou senha inválidos")
 	ErrUserInactive       = errors.New("usuário inativo no sistema")
-	ErrPasswordTooShort   = errors.New("a senha deve ter no mínimo 6 caracteres")
+	ErrPasswordTooShort   = errors.New("a senha deve ter no mínimo 4 caracteres")
 	ErrInvalidRole        = errors.New("cargo inválido: permitido super_admin ou admin")
 	ErrPermissionDenied   = errors.New("permissão negada para este recurso")
 )
@@ -39,7 +39,7 @@ type AuditLogRecord struct {
 }
 
 func HashPassword(plainPassword string) (string, error) {
-	if len(plainPassword) < 6 {
+	if len(plainPassword) < 4 {
 		return "", ErrPasswordTooShort
 	}
 	bytes, err := bcrypt.GenerateFromPassword([]byte(plainPassword), 12)

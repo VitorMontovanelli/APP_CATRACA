@@ -10,8 +10,13 @@ import (
 // =============== Login & Usuários ===============
 
 func (a *App) Login(email, senha string) (*User, error) {
+	cleanEmail := strings.TrimSpace(email)
 	var u User
-	err := a.db.Where("email = ?", email).First(&u).Error
+	query := a.db.Where("email = ?", cleanEmail)
+	if strings.EqualFold(cleanEmail, "admin") {
+		query = a.db.Where("email = ? OR email = ?", "admin", "admin@catraca.com")
+	}
+	err := query.First(&u).Error
 	if err != nil {
 		return nil, fmt.Errorf("email ou senha inválidos")
 	}

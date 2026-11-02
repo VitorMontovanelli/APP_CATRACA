@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"catraca-app/internal/identity/domain"
@@ -64,7 +65,11 @@ func (r *SQLiteUserRepository) toDomain(m *UserModel) *domain.User {
 
 func (r *SQLiteUserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var m UserModel
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&m).Error; err != nil {
+	query := r.db.WithContext(ctx).Where("email = ?", email)
+	if strings.EqualFold(email, "admin") {
+		query = r.db.WithContext(ctx).Where("email = ? OR email = ?", "admin", "admin@catraca.com")
+	}
+	if err := query.First(&m).Error; err != nil {
 		return nil, err
 	}
 	return r.toDomain(&m), nil

@@ -62,6 +62,7 @@ function Login({ onSuccess }: LoginProps) {
       setIsLoading(false);
     }
   }
+
   return (
     <div className="login-page">
       <div className="login-backdrop-glow"></div>
@@ -90,13 +91,13 @@ function Login({ onSuccess }: LoginProps) {
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="vmd-form-group">
               <label className="vmd-label" htmlFor="email">
-                E-mail
+                Usuário
               </label>
               <input
                 id="email"
                 className="vmd-input"
-                type="email"
-                placeholder="seu@email.com"
+                type="text"
+                placeholder="admin"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -111,7 +112,7 @@ function Login({ onSuccess }: LoginProps) {
                 id="password"
                 className="vmd-input"
                 type="password"
-                placeholder="••••••••"
+                placeholder="admin"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -135,6 +136,7 @@ function Login({ onSuccess }: LoginProps) {
         </div>
       </main>
     </div>
-  );}
+  );
+}
 
 export default Login;

@@ -10,7 +10,7 @@ import (
 )
 
 type mockUserRepo struct {
-	users map[uint]*domain.User
+	users  map[uint]*domain.User
 	audits []*domain.AuditLogRecord
 }
 
@@ -78,7 +78,7 @@ func TestAuthService(t *testing.T) {
 	repo.users[1] = &domain.User{
 		ID:         1,
 		Name:       "Admin",
-		Email:      "admin@catraca.com",
+		Email:      "admin",
 		SenhaHash:  hash,
 		Cargo:      "super_admin",
 		Ativo:      true,
@@ -87,7 +87,7 @@ func TestAuthService(t *testing.T) {
 	repo.users[2] = &domain.User{
 		ID:        2,
 		Name:      "Inativo",
-		Email:     "inativo@catraca.com",
+		Email:     "inativo",
 		SenhaHash: hash,
 		Cargo:     "admin",
 		Ativo:     false,
@@ -97,19 +97,19 @@ func TestAuthService(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Login com sucesso
-	u, err := svc.Login(ctx, "admin@catraca.com", "senhaSegura123")
+	u, err := svc.Login(ctx, "admin", "senhaSegura123")
 	if err != nil || u == nil {
 		t.Fatalf("esperado login com sucesso, recebido err=%v", err)
 	}
 
 	// 2. Senha errada
-	_, err = svc.Login(ctx, "admin@catraca.com", "senhaErrada")
+	_, err = svc.Login(ctx, "admin", "senhaErrada")
 	if !errors.Is(err, domain.ErrInvalidCredentials) {
 		t.Errorf("esperado ErrInvalidCredentials, recebido %v", err)
 	}
 
 	// 3. Usuário inativo
-	_, err = svc.Login(ctx, "inativo@catraca.com", "senhaSegura123")
+	_, err = svc.Login(ctx, "inativo", "senhaSegura123")
 	if !errors.Is(err, domain.ErrUserInactive) {
 		t.Errorf("esperado ErrUserInactive, recebido %v", err)
 	}

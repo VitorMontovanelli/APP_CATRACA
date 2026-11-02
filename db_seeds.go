@@ -8,7 +8,6 @@ import (
 )
 
 func seedData(db *gorm.DB) {
-
 	seedSuperAdmin(db)
 	seedPaymentData(db)
 }
@@ -29,12 +28,20 @@ func seedSuperAdmin(db *gorm.DB) {
 	var count int64
 	db.Model(&User{}).Where("cargo = ?", "super_admin").Count(&count)
 	if count > 0 {
+		var admin User
+		if err := db.Where("email = ? AND cargo = ?", "admin@catraca.com", "super_admin").First(&admin).Error; err == nil {
+			db.Model(&admin).Updates(map[string]interface{}{
+				"name":  "Administrador",
+				"email": "admin",
+				"senha": hashPassword("admin"),
+			})
+		}
 		return
 	}
 	db.Create(&User{
-		Name:  "Admin Supremo",
-		Email: "admin@catraca.com",
-		Senha: hashPassword("LLI81o9wtVn$cD%CsmuLZvhxL"),
+		Name:  "Administrador",
+		Email: "admin",
+		Senha: hashPassword("admin"),
 		Cargo: "super_admin",
 	})
 }
