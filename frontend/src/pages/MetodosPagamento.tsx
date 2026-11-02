@@ -96,9 +96,6 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
     <div style={{ animation: "fadeIn 0.3s ease-out" }}>
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Métodos de Pagamento</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Habilite e configure as formas de recebimento e integradores de faturas da academia.
-        </p>
       </div>
 
       {error && (

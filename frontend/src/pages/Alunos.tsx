@@ -384,9 +384,6 @@ function Alunos({ user }: AlunosProps) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Gestão de Alunos</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-            Visualize, edite e ative matrículas de alunos e seus planos.
-          </p>
         </div>
         {canManage && (
           <button onClick={openCreate} className="vmd-btn vmd-btn-primary">

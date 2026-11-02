@@ -116,9 +116,6 @@ function Home() {
       {/* Title */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Visão Geral</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Dashboard executivo e resumo de faturamento da academia.
-        </p>
       </div>
 
       {/* Grid 4 - Main KPIs */}
@@ -151,10 +148,7 @@ function Home() {
       <div className="vmd-card" style={{ marginBottom: 28, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Fluxo de Entradas (Catraca)</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-              Histórico de acessos liberados vs negados na academia.
-            </p>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Fluxo de Alunos</h3>
           </div>
           {/* Filters Selectors */}
           <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 8, border: "1px solid var(--border-color)" }}>
@@ -346,9 +340,6 @@ function Home() {
         <div className="vmd-card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Planos Ativos por Modalidade</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-              Adesão dos alunos por categoria de plano.
-            </p>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -397,9 +388,6 @@ function Home() {
         <div className="vmd-card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Estatísticas Administrativas</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-              Controle de usuários do sistema.
-            </p>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>

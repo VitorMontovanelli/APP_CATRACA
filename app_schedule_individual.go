@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -130,6 +131,28 @@ func (a *App) ListarAgendamentosIndividuaisMes(ano, mes int) ([]DiaIndividualAge
 	if list == nil {
 		list = []DiaIndividualAgenda{}
 	}
+
+	// Contagem por prática para que cada calendário mostre apenas a sua agenda.
+	type contagemPratica struct {
+		Data    string
+		Pratica string
+		Total   int
+	}
+	var contagens []contagemPratica
+	a.db.Raw(`
+		SELECT data, pratica, COUNT(*) AS total
+		FROM agendamento_individuals
+		WHERE data LIKE ?
+		GROUP BY data, pratica
+	`, prefix+"%").Scan(&contagens)
+	porDia := map[string][]string{}
+	for _, c := range contagens {
+		porDia[c.Data] = append(porDia[c.Data], fmt.Sprintf("%s:%d", c.Pratica, c.Total))
+	}
+	for i := range list {
+		list[i].Contagens = strings.Join(porDia[list[i].Data], ",")
+	}
+
 	return list, nil
 }
 

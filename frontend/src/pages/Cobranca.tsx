@@ -85,9 +85,6 @@ function Cobranca() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Painel de Cobranças</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-            {!loading ? `${invoices.length} fatura(s) vencida(s) no sistema.` : "Carregando faturas..."}
-          </p>
         </div>
         <input
           value={searchTerm}

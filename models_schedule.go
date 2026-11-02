@@ -49,6 +49,7 @@ type DiaIndividualAgenda struct {
 	Total      int    `json:"total"`
 	Capacidade int    `json:"capacidade"`
 	Praticas   string `json:"praticas"`
+	Contagens  string `json:"contagens"` // quantidade por prática, ex.: "ventosaterapia:2,kinesio_tape:1"
 }
 
 type ConfigAgendaIndividual struct {

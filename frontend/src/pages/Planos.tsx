@@ -187,9 +187,6 @@ function Planos({ user }: PlanosProps) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Planos de Acesso</h2>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-            Gerencie as modalidades de planos e planos vinculados aos alunos.
-          </p>
         </div>
         {canManage && (
           <button onClick={() => setShowModal(true)} className="vmd-btn vmd-btn-primary">

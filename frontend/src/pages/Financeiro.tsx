@@ -153,9 +153,6 @@ function Financeiro({ user }: FinanceiroProps) {
     <div style={{ animation: "fadeIn 0.3s ease-out" }}>
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>Gestão Financeira</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-          Gerenciamento de cobranças, faturas e planos dos alunos matriculados.
-        </p>
       </div>
 
       <div className="vmd-tabs">

@@ -132,9 +132,14 @@ function ocupacaoLabel(total: number, capacidade: number): { label: string; colo
   return { label: "Lotado", color: "#f87171", bg: "rgba(239,68,68,0.18)" };
 }
 
-function parsePraticas(s: string): string[] {
-  if (!s) return [];
-  return [...new Set(s.split(","))];
+function parseContagens(s: string): Record<string, number> {
+  const map: Record<string, number> = {};
+  if (!s) return map;
+  for (const part of s.split(",")) {
+    const [pratica, qtd] = part.split(":");
+    if (pratica) map[pratica] = Number(qtd) || 0;
+  }
+  return map;
 }
 
 function makeDias(ano: number, mes: number): (string | null)[] {
@@ -290,9 +295,6 @@ function CalendarioPilates({
     <div>
       <div style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Calendário Principal — Pilates</h3>
-        <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
-          Capacidade padrão de {CAPACIDADE_PADRAO} alunos por dia (editável).
-        </p>
       </div>
 
       {error && <div className="vmd-alert vmd-alert-danger"><span>⚠️ {error}</span></div>}
@@ -459,7 +461,7 @@ function CalendarioPratica({
   const now = new Date();
   const [ano, setAno] = useState(now.getFullYear());
   const [mes, setMes] = useState(now.getMonth());
-  const [ocupacao, setOcupacao] = useState<Record<string, { total: number; capacidade: number; praticas: string }>>({});
+  const [ocupacao, setOcupacao] = useState<Record<string, { total: number; capacidade: number; praticas: string; contagens: string }>>({});
   const [loadingMes, setLoadingMes] = useState(false);
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -484,9 +486,9 @@ function CalendarioPratica({
   const loadMes = useCallback(async (a: number, m: number) => {
     setLoadingMes(true);
     try {
-      const list = await ListarAgendamentosIndividuaisMes(a, m + 1) as unknown as { data: string; total: number; capacidade: number; praticas: string }[];
-      const map: Record<string, { total: number; capacidade: number; praticas: string }> = {};
-      for (const d of list) map[d.data] = { total: d.total, capacidade: d.capacidade, praticas: d.praticas || "" };
+      const list = await ListarAgendamentosIndividuaisMes(a, m + 1) as unknown as { data: string; total: number; capacidade: number; praticas: string; contagens: string }[];
+      const map: Record<string, { total: number; capacidade: number; praticas: string; contagens: string }> = {};
+      for (const d of list) map[d.data] = { total: d.total, capacidade: d.capacidade, praticas: d.praticas || "", contagens: d.contagens || "" };
       setOcupacao(map);
     } catch (e) {
       setError(String(e));
@@ -648,9 +650,8 @@ function CalendarioPratica({
         <div className="agenda-grid">
           {dias.map((data, idx) => {
             if (data === null) return <div key={`v-${idx}`} className="agenda-vazio" />;
-            const dia = ocupacao[data] || { total: 0, capacidade: limite, praticas: "" };
-            const dayPraticas = parsePraticas(dia.praticas);
-            const thisCount = dayPraticas.includes(praticaKey) ? dia.total : 0;
+            const dia = ocupacao[data] || { total: 0, capacidade: limite, praticas: "", contagens: "" };
+            const thisCount = parseContagens(dia.contagens)[praticaKey] || 0;
             const oClass = ocupacaoClass(thisCount, dia.capacidade);
             return (
               <button
@@ -659,9 +660,7 @@ function CalendarioPratica({
                 onClick={() => abrirDia(data)}
               >
                 <span className="agenda-day-num">{Number(data.split("-")[2])}</span>
-                {thisCount > 0 && (
-                  <span className="agenda-day-count">{thisCount}/{dia.capacidade} vagas</span>
-                )}
+                <span className="agenda-day-count">{thisCount}/{dia.capacidade} vagas</span>
               </button>
             );
           })}
@@ -828,7 +827,6 @@ function CalendariosAgendamento() {
       }}>
         <div style={{ padding: "0 16px 14px", borderBottom: "1px solid var(--border-color)", marginBottom: 8 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, letterSpacing: "-0.3px" }}>Calendários</h3>
-          <p style={{ color: "var(--text-dim)", fontSize: 11, marginTop: 2 }}>Selecione uma modalidade</p>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 8px" }}>
           {MENU_ITEMS.map((item) => {
