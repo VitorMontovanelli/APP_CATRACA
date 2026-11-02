@@ -923,3 +923,5 @@ export namespace main {
 
 }
 
+
+export import models = main;

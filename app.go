@@ -2,53 +2,53 @@ package main
 
 import (
 	"context"
-	"time"
 
+	"catraca-app/internal/adapters/inbound"
+	"catraca-app/internal/infra/db"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	ctx        context.Context
-	db         *gorm.DB
-	actorCargo string
-	actorID    uint
+	ctx context.Context
+	db  *gorm.DB
+
+	*inbound.AccessHandler
+	*inbound.BillingHandler
+	*inbound.IdentityHandler
+	*inbound.ScheduleHandler
+	*inbound.StudentHandler
+	*inbound.SystemHandler
 }
 
 func NewApp() *App {
-	return &App{}
+	database := db.InitDB()
+	session := inbound.NewSessionManager(database)
+
+	return &App{
+		db:              database,
+		AccessHandler:   inbound.NewAccessHandler(database, session),
+		BillingHandler:  inbound.NewBillingHandler(database, session),
+		IdentityHandler: inbound.NewIdentityHandler(database, session),
+		ScheduleHandler: inbound.NewScheduleHandler(database, session),
+		StudentHandler:  inbound.NewStudentHandler(database, session),
+		SystemHandler:   inbound.NewSystemHandler(database, session),
+	}
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	a.db = initDB()
-}
-
-func ehAdmin(cargo string) bool {
-	return cargo == "super_admin" || cargo == "admin"
-}
-
-func (a *App) registrarAudit(action string, targetID uint) {
-	a.registrarAuditComDetalhes(action, targetID, "")
-}
-
-func (a *App) registrarAuditComDetalhes(action string, targetID uint, details string) {
-	a.db.Create(&AuditLog{
-		ActorID:   a.actorID,
-		Action:    action,
-		TargetID:  &targetID,
-		Details:   details,
-		Timestamp: time.Now(),
-	})
+	a.AccessHandler.SetContext(ctx)
+	a.BillingHandler.SetContext(ctx)
+	a.IdentityHandler.SetContext(ctx)
+	a.ScheduleHandler.SetContext(ctx)
+	a.StudentHandler.SetContext(ctx)
+	a.SystemHandler.SetContext(ctx)
 }
 
 func (a *App) onShutdown() {
-	config, err := a.ObterConfigTelegram()
-	if err != nil || config == nil || !config.AutoBackup {
-		return
-	}
-	_, _ = a.enviarBackupTelegram()
+	a.SystemHandler.OnShutdown()
 }
 
 func (a *App) AppVersion() string {
-	return "2.1.0"
+	return Version
 }

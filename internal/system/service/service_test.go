@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"catraca-app/internal/system/domain"
@@ -66,8 +67,8 @@ func TestSystemService(t *testing.T) {
 
 	// 3. Teste sanitização path traversal
 	safePath, err := domain.SanitizeFileName("/tmp/backups", "catraca_2026.zip")
-	if err != nil || safePath != "/tmp/backups/catraca_2026.zip" {
-		t.Errorf("caminho esperado /tmp/backups/catraca_2026.zip, recebido %s", safePath)
+	if err != nil || filepath.ToSlash(safePath) != "/tmp/backups/catraca_2026.zip" {
+		t.Errorf("caminho esperado /tmp/backups/catraca_2026.zip, recebido %s", filepath.ToSlash(safePath))
 	}
 
 	_, err = domain.SanitizeFileName("/tmp/backups", "../../../etc/passwd")
