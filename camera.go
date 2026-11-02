@@ -18,12 +18,14 @@ func (a *App) CapturarFotoWebcam() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	if runtime.GOOS == "linux" {
+	switch runtime.GOOS {
+	case "linux":
 		return capturarFotoLinux(ctx)
-	} else if runtime.GOOS == "windows" {
+	case "windows":
 		return capturarFotoWindows(ctx)
+	default:
+		return "", fmt.Errorf("sistema operacional %s não suportado para captura direta", runtime.GOOS)
 	}
-	return "", fmt.Errorf("sistema operacional %s não suportado para captura direta", runtime.GOOS)
 }
 
 func capturarFotoLinux(ctx context.Context) (string, error) {

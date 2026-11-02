@@ -26,12 +26,14 @@ func (a *HardwareCameraAdapter) CaptureFrame(ctx context.Context) (string, error
 	timeoutCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
 
-	if runtime.GOOS == "linux" {
+	switch runtime.GOOS {
+	case "linux":
 		return a.captureLinux(timeoutCtx)
-	} else if runtime.GOOS == "windows" {
+	case "windows":
 		return a.captureWindows(timeoutCtx)
+	default:
+		return "", fmt.Errorf("sistema operacional %s não suportado para captura direta de câmera", runtime.GOOS)
 	}
-	return "", fmt.Errorf("sistema operacional %s não suportado para captura direta de câmera", runtime.GOOS)
 }
 
 func (a *HardwareCameraAdapter) captureLinux(ctx context.Context) (string, error) {

@@ -125,7 +125,7 @@ func podeCriar(actorCargo, targetCargo string) bool {
 	return actorCargo == "super_admin" && targetCargo == "admin"
 }
 
-func podeGerenciar(actorCargo, targetCargo string) bool {
+func podeGerenciar(actorCargo, _ string) bool {
 	return actorCargo == "super_admin"
 }
 
