@@ -51,6 +51,32 @@ func (s *AuthService) AlterarSenha(ctx context.Context, userID uint, senhaAtual,
 	return s.repo.UpdatePassword(ctx, userID, newHash)
 }
 
+func (s *AuthService) AlterarSenhaLogin(ctx context.Context, email, senhaAtual, novaSenha string) error {
+	user, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return domain.ErrInvalidCredentials
+	}
+
+	if !user.Ativo {
+		return domain.ErrUserInactive
+	}
+
+	if !domain.CheckPasswordHash(senhaAtual, user.SenhaHash) {
+		return domain.ErrInvalidCredentials
+	}
+
+	newHash, err := domain.HashPassword(novaSenha)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.UpdatePassword(ctx, user.ID, newHash); err != nil {
+		return err
+	}
+
+	return s.RegistrarAuditoria(ctx, user.ID, "alterou_senha_login", nil, "usuario="+email)
+}
+
 func (s *AuthService) RegistrarAuditoria(ctx context.Context, actorID uint, action string, targetID *uint, details string) error {
 	log := &domain.AuditLogRecord{
 		ActorID:   actorID,

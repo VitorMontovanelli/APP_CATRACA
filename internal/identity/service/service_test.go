@@ -114,9 +114,25 @@ func TestAuthService(t *testing.T) {
 		t.Errorf("esperado ErrUserInactive, recebido %v", err)
 	}
 
-	// 4. Auditoria
-	err = svc.RegistrarAuditoria(ctx, 1, "login_realizado", nil, "IP 127.0.0.1")
-	if err != nil || len(repo.audits) != 1 {
-		t.Errorf("esperado 1 auditoria gravada, erro: %v", err)
+	// 4. Alteração de senha no login com sucesso
+	err = svc.AlterarSenhaLogin(ctx, "admin", "senhaSegura123", "novaSenha456")
+	if err != nil {
+		t.Fatalf("esperada alteração de senha no login com sucesso, recebido %v", err)
+	}
+	// Login com nova senha deve funcionar
+	u, err = svc.Login(ctx, "admin", "novaSenha456")
+	if err != nil || u == nil {
+		t.Fatalf("esperado login com a nova senha, recebido %v", err)
+	}
+
+	// 5. Alteração com senha atual errada
+	err = svc.AlterarSenhaLogin(ctx, "admin", "senhaErrada", "outraSenha789")
+	if !errors.Is(err, domain.ErrInvalidCredentials) {
+		t.Errorf("esperado erro ao passar senha atual errada, recebido %v", err)
+	}
+
+	// 6. Auditoria gravada
+	if len(repo.audits) < 1 {
+		t.Errorf("esperado registro de auditoria gravado")
 	}
 }

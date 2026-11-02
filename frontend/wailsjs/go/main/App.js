@@ -18,6 +18,10 @@ export function AlterarSenha(arg1, arg2) {
   return window['go']['main']['App']['AlterarSenha'](arg1, arg2);
 }
 
+export function AlterarSenhaLogin(arg1, arg2, arg3) {
+  return window['go']['main']['App']['AlterarSenhaLogin'](arg1, arg2, arg3);
+}
+
 export function AppVersion() {
   return window['go']['main']['App']['AppVersion']();
 }
@@ -280,6 +284,10 @@ export function ObterMetricasHome() {
 
 export function PararStreamWebcam() {
   return window['go']['main']['App']['PararStreamWebcam']();
+}
+
+export function RedefinirSenhaUsuario(arg1, arg2) {
+  return window['go']['main']['App']['RedefinirSenhaUsuario'](arg1, arg2);
 }
 
 export function RemoverAgendamento(arg1) {

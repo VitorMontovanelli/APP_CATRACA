@@ -37,10 +37,10 @@ func (a *App) ListarUsuarios() ([]User, error) {
 	users := []User{}
 	var err error
 	if a.actorCargo == "super_admin" {
-		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").Order("id").Find(&users).Error
+		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, permissoes, criado_em").Order("id").Find(&users).Error
 	} else {
 		// admin só pode ver a si mesmo e usuários criados por ele (excluindo super_admins)
-		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, criado_em").
+		err = a.db.Select("id, name, email, cargo, registrador_id, ativo, permissoes, criado_em").
 			Where("(id = ? OR registrador_id = ?) AND cargo != ?", a.actorID, a.actorID, "super_admin").
 			Order("id").Find(&users).Error
 	}
@@ -127,4 +127,22 @@ func (a *App) SalvarPermissoesUsuario(userID uint, permissoes string) error {
 		a.registrarAuditComDetalhes("alterou_permissoes", userID, fmt.Sprintf("permissoes=%s", permissoes))
 	}
 	return err
+}
+
+func (a *App) RedefinirSenhaUsuario(userID uint, novaSenha string) error {
+	if a.actorCargo != "super_admin" && a.actorID != userID {
+		return fmt.Errorf("permissão negada para alterar a senha")
+	}
+	if len(novaSenha) < 4 {
+		return fmt.Errorf("a senha deve ter no mínimo 4 caracteres")
+	}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(novaSenha), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("erro ao gerar hash da senha: %w", err)
+	}
+	if err := a.db.Model(&User{}).Where("id = ?", userID).Update("senha", string(hashed)).Error; err != nil {
+		return err
+	}
+	a.registrarAuditComDetalhes("redefiniu_senha", userID, fmt.Sprintf("por_actor=%d", a.actorID))
+	return nil
 }

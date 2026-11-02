@@ -59,9 +59,8 @@ const navGroups: NavGroup[] = [
   {
     title: "Sistema",
     items: [
-      { page: "usuarios", label: "Usuários", icon: "👥", minCargo: "admin" },
+      { page: "usuarios", label: "Usuários Administrativos", icon: "👥", minCargo: "admin" },
       { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "admin" },
-      { page: "acesso", label: "Acessos", icon: "🔑", minCargo: "super_admin" },
       { page: "backup", label: "Backup Telegram", icon: "☁️", minCargo: "super_admin" },
     ],
   },
@@ -77,21 +76,12 @@ function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [showPerfil, setShowPerfil] = useState(false);
 
-  // Filter items in each group by cargo and dynamic permissions
   const filteredGroups = navGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        // First check role requirements
         if ((cargoLevel[item.minCargo] || 0) > userLevel) return false;
-
-        // super_admin has absolute access
         if (user.cargo === "super_admin") return true;
-
-        // admin is subject to dynamic permissions
-        if (item.page === "acesso") return false; // admin never sees accesses page
-
-        // check list
         const perms = user.permissoes ? user.permissoes.split(",") : ["home", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
         return perms.includes(item.page);
       }),
@@ -106,17 +96,9 @@ function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">CatracaVMD</div>
-          
-          <button
-            onClick={() => setShowPerfil(true)}
-            className="sidebar-user-btn"
-          >
-            <div className="sidebar-user-avatar">
-              {user.foto ? (
-                <img src={user.foto} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                user.name.charAt(0).toUpperCase()
-              )}
+          <button className="sidebar-user" onClick={() => setShowPerfil(true)}>
+            <div className="sidebar-avatar">
+              {user.foto ? <img src={user.foto} alt="avatar" /> : user.name.charAt(0).toUpperCase()}
             </div>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user.name}</span>

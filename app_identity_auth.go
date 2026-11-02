@@ -18,18 +18,18 @@ func (a *App) Login(email, senha string) (*User, error) {
 	}
 	err := query.First(&u).Error
 	if err != nil {
-		return nil, fmt.Errorf("email ou senha inválidos")
+		return nil, fmt.Errorf("usuário ou senha inválidos")
 	}
 
 	if strings.HasPrefix(u.Senha, "$2a$") || strings.HasPrefix(u.Senha, "$2y$") {
 		// Validar usando bcrypt
 		if err := bcrypt.CompareHashAndPassword([]byte(u.Senha), []byte(senha)); err != nil {
-			return nil, fmt.Errorf("email ou senha inválidos")
+			return nil, fmt.Errorf("usuário ou senha inválidos")
 		}
 	} else {
 		// Senha legada em texto plano
 		if u.Senha != senha {
-			return nil, fmt.Errorf("email ou senha inválidos")
+			return nil, fmt.Errorf("usuário ou senha inválidos")
 		}
 		// Migrar de forma transparente para bcrypt
 		hashed, err := bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
@@ -73,6 +73,44 @@ func (a *App) AlterarSenha(senhaAtual, novaSenha string) error {
 		a.registrarAudit("alterou_senha", a.actorID)
 	}
 	return err
+}
+
+func (a *App) AlterarSenhaLogin(usuario, senhaAtual, novaSenha string) error {
+	cleanUsuario := strings.TrimSpace(usuario)
+	if cleanUsuario == "" || senhaAtual == "" || novaSenha == "" {
+		return fmt.Errorf("todos os campos são obrigatórios")
+	}
+	if len(novaSenha) < 4 {
+		return fmt.Errorf("a nova senha deve ter no mínimo 4 caracteres")
+	}
+
+	var u User
+	query := a.db.Where("email = ?", cleanUsuario)
+	if strings.EqualFold(cleanUsuario, "admin") {
+		query = a.db.Where("email = ? OR email = ?", "admin", "admin@catraca.com")
+	}
+	if err := query.First(&u).Error; err != nil {
+		return fmt.Errorf("usuário não encontrado")
+	}
+
+	if strings.HasPrefix(u.Senha, "$2a$") || strings.HasPrefix(u.Senha, "$2y$") {
+		if err := bcrypt.CompareHashAndPassword([]byte(u.Senha), []byte(senhaAtual)); err != nil {
+			return fmt.Errorf("senha atual incorreta")
+		}
+	} else if u.Senha != senhaAtual {
+		return fmt.Errorf("senha atual incorreta")
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(novaSenha), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("erro ao criptografar nova senha: %w", err)
+	}
+
+	if err := a.db.Model(&u).Update("senha", string(hashed)).Error; err != nil {
+		return err
+	}
+	a.registrarAuditComDetalhes("alterou_senha_login", u.ID, fmt.Sprintf("usuario=%s", cleanUsuario))
+	return nil
 }
 
 func (a *App) AlterarFoto(fotoBase64 string) error {

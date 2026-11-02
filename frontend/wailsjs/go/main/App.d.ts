@@ -10,6 +10,8 @@ export function AlterarFoto(arg1:string):Promise<void>;
 
 export function AlterarSenha(arg1:string,arg2:string):Promise<void>;
 
+export function AlterarSenhaLogin(arg1:string,arg2:string,arg3:string):Promise<void>;
+
 export function AppVersion():Promise<string>;
 
 export function AtivarPaymentGateway(arg1:number,arg2:boolean):Promise<void>;
@@ -141,6 +143,8 @@ export function ObterFotoAluno(arg1:number):Promise<string>;
 export function ObterMetricasHome():Promise<main.MetricasHome>;
 
 export function PararStreamWebcam():Promise<void>;
+
+export function RedefinirSenhaUsuario(arg1:number,arg2:string):Promise<void>;
 
 export function RemoverAgendamento(arg1:number):Promise<void>;
 

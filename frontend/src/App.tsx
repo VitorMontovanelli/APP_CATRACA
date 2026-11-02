@@ -2,7 +2,6 @@ import { Component, useState, type ReactNode } from "react";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import Home from "./pages/Home";
-
 import Usuarios from "./pages/Usuarios";
 import Alunos from "./pages/Alunos";
 import Logs from "./pages/Logs";
@@ -10,7 +9,6 @@ import Planos from "./pages/Planos";
 import MetodosPagamento from "./pages/MetodosPagamento";
 import Financeiro from "./pages/Financeiro";
 import Cobranca from "./pages/Cobranca";
-import Acesso from "./pages/Acesso";
 import Backup from "./pages/Backup";
 import CalendariosAgendamento from "./pages/CalendariosAgendamento";
 
@@ -102,10 +100,10 @@ function App() {
                 return <Cobranca />;
               case "logs":
                 return <Logs />;
-              case "acesso":
-                return <Acesso />;
               case "backup":
                 return <Backup />;
+              default:
+                return <Usuarios user={user} />;
             }
           })()}
         </PageErrorBoundary>
