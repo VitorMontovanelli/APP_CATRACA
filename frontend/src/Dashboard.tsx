@@ -82,7 +82,7 @@ function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
       items: group.items.filter((item) => {
         if ((cargoLevel[item.minCargo] || 0) > userLevel) return false;
         if (user.cargo === "super_admin") return true;
-        const perms = user.permissoes ? user.permissoes.split(",") : ["home", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
+        const perms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
         return perms.includes(item.page);
       }),
     }))

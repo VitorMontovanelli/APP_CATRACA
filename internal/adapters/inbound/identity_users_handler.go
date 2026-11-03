@@ -68,6 +68,7 @@ func (h *IdentityUsersHandler) CriarUsuario(name, email, senha, cargo string, re
 		Senha:         string(hashed),
 		Cargo:         cargo,
 		RegistradorID: uintPtr(registradorID),
+		Permissoes:    models.DefaultAdminPermissoes,
 	}
 	if err := h.db.Create(&user).Error; err != nil {
 		return nil, err

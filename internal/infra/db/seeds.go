@@ -35,7 +35,7 @@ func seedSuperAdmin(db *gorm.DB) {
 			Senha:      HashPassword("admin"),
 			Cargo:      "super_admin",
 			Ativo:      true,
-			Permissoes: "home,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios,logs",
+			Permissoes: models.DefaultAdminPermissoes,
 		})
 		return
 	}
@@ -46,7 +46,7 @@ func seedSuperAdmin(db *gorm.DB) {
 		"cargo":      "super_admin",
 		"ativo":      true,
 		"senha":      HashPassword("admin"),
-		"permissoes": "home,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios,logs",
+		"permissoes": models.DefaultAdminPermissoes,
 	})
 }
 

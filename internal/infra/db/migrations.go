@@ -1,6 +1,8 @@
 package db
 
 import (
+	"strings"
+
 	"catraca-app/internal/models"
 	"gorm.io/gorm"
 )
@@ -46,6 +48,33 @@ func updateLegacyPlan(db *gorm.DB, t planMigrationTarget) {
 			"preco_cartao_cents": t.cardCents,
 			"grace_period_days":  t.gracePeriod,
 		})
+}
+
+func MigrateAdminPermissions(db *gorm.DB) {
+	var admins []models.User
+	if err := db.Where("cargo = ?", "admin").Find(&admins).Error; err != nil {
+		return
+	}
+	for _, u := range admins {
+		atualizadas := comPermissaoAgenda(u.Permissoes)
+		if atualizadas == u.Permissoes {
+			continue
+		}
+		db.Model(&models.User{}).Where("id = ?", u.ID).Update("permissoes", atualizadas)
+	}
+}
+
+func comPermissaoAgenda(permissoes string) string {
+	permissoes = strings.TrimSpace(permissoes)
+	if permissoes == "" {
+		return models.DefaultAdminPermissoes
+	}
+	for _, p := range strings.Split(permissoes, ",") {
+		if strings.TrimSpace(p) == "agenda" {
+			return permissoes
+		}
+	}
+	return permissoes + ",agenda"
 }
 
 func ensureAvulsoPlan(db *gorm.DB) {

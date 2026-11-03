@@ -26,7 +26,7 @@ const AVAILABLE_PAGES = [
 ];
 
 export default function PermissoesModal({ user, onClose, onSaved }: PermissoesModalProps) {
-  const initialPerms = user.permissoes ? user.permissoes.split(",") : ["home", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
+  const initialPerms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
   const [selected, setSelected] = useState<string[]>(initialPerms);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");

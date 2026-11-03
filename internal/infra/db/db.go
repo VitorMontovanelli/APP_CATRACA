@@ -26,6 +26,7 @@ func InitDB() *gorm.DB {
 
 	SeedData(db)
 	MigrateDefaultPlans(db)
+	MigrateAdminPermissions(db)
 
 	return db
 }
