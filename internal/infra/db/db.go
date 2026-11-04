@@ -23,6 +23,7 @@ func InitDB() *gorm.DB {
 	autoMigrateModels(db)
 	executeRawTableMigrations(db)
 	migrateColumns(db)
+	MigrateEmptyStudentCPFToNull(db)
 
 	SeedData(db)
 	MigrateDefaultPlans(db)

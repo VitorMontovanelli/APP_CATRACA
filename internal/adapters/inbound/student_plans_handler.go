@@ -3,6 +3,7 @@ package inbound
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"catraca-app/internal/models"
 	"gorm.io/gorm"
@@ -27,6 +28,15 @@ func (h *StudentPlansHandler) CriarStudentComPlano(nome, cpf, dataNascimento, te
 		return nil, fmt.Errorf("permissão negada")
 	}
 
+	nome = strings.TrimSpace(nome)
+	cpf = strings.TrimSpace(cpf)
+	if err := validarDadosAluno(nome, telefone); err != nil {
+		return nil, err
+	}
+	if err := verificarCPFDuplicado(h.db, cpf, 0); err != nil {
+		return nil, err
+	}
+
 	tx := h.db.Begin()
 
 	student := models.Student{
@@ -40,7 +50,7 @@ func (h *StudentPlansHandler) CriarStudentComPlano(nome, cpf, dataNascimento, te
 	}
 	if err := tx.Create(&student).Error; err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, tratarErroCPF(h.db, err, cpf, 0)
 	}
 
 	if planID > 0 {

@@ -12,7 +12,7 @@ import (
 type StudentModel struct {
 	ID               uint      `gorm:"primaryKey"`
 	Nome             string    `gorm:"size:255;not null"`
-	CPF              string    `gorm:"size:14;uniqueIndex"`
+	CPF              string    `gorm:"size:14;uniqueIndex;default:null"`
 	DataNascimento   *string   `gorm:"size:10"`
 	Telefone         *string   `gorm:"size:20"`
 	TelefoneUrgencia *string   `gorm:"size:20"`
@@ -102,7 +102,7 @@ func (r *SQLiteStudentRepository) Create(ctx context.Context, s *domain.Student)
 func (r *SQLiteStudentRepository) Update(ctx context.Context, s *domain.Student) error {
 	return r.db.WithContext(ctx).Model(&StudentModel{}).Where("id = ?", s.ID).Updates(map[string]interface{}{
 		"nome":               s.Nome,
-		"cpf":                s.CPF,
+		"cpf":                nilOrString(s.CPF),
 		"data_nascimento":    s.DataNascimento,
 		"telefone":           s.Telefone,
 		"telefone_urgencia":  s.TelefoneUrgencia,
@@ -110,6 +110,13 @@ func (r *SQLiteStudentRepository) Update(ctx context.Context, s *domain.Student)
 		"forma_pagamento_id": s.FormaPagamentoID,
 		"observacao":         s.Observacao,
 	}).Error
+}
+
+func nilOrString(v string) interface{} {
+	if v == "" {
+		return nil
+	}
+	return v
 }
 
 func (r *SQLiteStudentRepository) SetActive(ctx context.Context, id uint, active bool) error {

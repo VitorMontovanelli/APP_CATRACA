@@ -205,7 +205,7 @@ function Alunos({ user }: AlunosProps) {
   async function openEdit(s: StudentComPlano) {
     stopCamera();
     setEditId(s.id);
-    setNome(s.nome); setCpf(s.cpf);
+    setNome(s.nome); setCpf(s.cpf || "");
     setDataNasc(s.data_nascimento || "");
     setTelefone(s.telefone || ""); setTelefoneUrgencia(s.telefone_urgencia || ""); setEmail(s.email || "");
     setFormaPagamentoId(s.forma_pagamento_id || 0);
@@ -291,6 +291,14 @@ function Alunos({ user }: AlunosProps) {
 
   async function handleSave() {
     setError("");
+    if (!nome.trim()) {
+      setError("Informe o nome do aluno.");
+      return;
+    }
+    if (!telefone.trim()) {
+      setError("Informe o telefone do aluno.");
+      return;
+    }
     setUploadingLaudo(true);
     try {
       let studentId: number | null = editId;
@@ -305,7 +313,10 @@ function Alunos({ user }: AlunosProps) {
           studentId = created.id;
         }
       } catch (e: any) {
-        setError("Não foi possível salvar os dados do aluno. " + mensagemAmigavel(e));
+        const msg = mensagemAmigavel(e);
+        // Mensagem de CPF duplicado já vem pronta do backend; mantém o modal
+        // aberto e preserva tudo o que a usuária digitou.
+        setError(/^Este CPF já está cadastrado/i.test(msg) ? msg : "Não foi possível salvar os dados do aluno. " + msg);
         return;
       }
 
@@ -480,7 +491,7 @@ function Alunos({ user }: AlunosProps) {
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                  CPF: {s.cpf} {s.data_nascimento ? `· Nasc: ${formatDate(s.data_nascimento)}` : ""}
+                  CPF: {s.cpf || "—"} {s.data_nascimento ? `· Nasc: ${formatDate(s.data_nascimento)}` : ""}
                 </div>
                 {s.telefone_urgencia && (
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
@@ -763,7 +774,7 @@ function Alunos({ user }: AlunosProps) {
                 </div>
 
                 <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                  <label className="vmd-label">Nome Completo</label>
+                  <label className="vmd-label">Nome Completo *</label>
                   <input
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
@@ -774,7 +785,7 @@ function Alunos({ user }: AlunosProps) {
 
                 <div className="vmd-grid-2">
                   <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vmd-label">CPF</label>
+                    <label className="vmd-label">CPF (opcional)</label>
                     <input
                       value={cpf}
                       onChange={(e) => setCpf(maskCPF(e.target.value))}
@@ -784,7 +795,7 @@ function Alunos({ user }: AlunosProps) {
                     />
                   </div>
                   <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vmd-label">Data de Nascimento</label>
+                    <label className="vmd-label">Data de Nascimento (opcional)</label>
                     <input
                       type="date"
                       value={dataNasc}
@@ -797,7 +808,7 @@ function Alunos({ user }: AlunosProps) {
 
                 <div className="vmd-grid-2">
                   <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vmd-label">Telefone / WhatsApp</label>
+                    <label className="vmd-label">Telefone / WhatsApp *</label>
                     <input
                       value={telefone}
                       onChange={(e) => setTelefone(maskTel(e.target.value))}

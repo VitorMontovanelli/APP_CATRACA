@@ -117,8 +117,10 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
     if (!nome.trim()) errs.nome = "Nome é obrigatório";
 
     const cpfDigits = cpf.replace(/\D/g, "");
-    if (cpfDigits.length !== 11 || !validarCPF(cpf))
+    if (cpfDigits && (cpfDigits.length !== 11 || !validarCPF(cpf)))
       errs.cpf = "CPF inválido";
+
+    if (!telefone.trim()) errs.telefone = "Telefone é obrigatório";
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       errs.email = "E-mail inválido";
@@ -158,7 +160,7 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
 
           <form className="cadastro-form" onSubmit={handleSubmit}>
             <div className="cadastro-field cadastro-field-full">
-              <label className="cadastro-label">Nome completo</label>
+              <label className="cadastro-label">Nome completo *</label>
               <input
                 className={`cadastro-input ${errors.nome ? "cadastro-input-error" : ""}`}
                 type="text"
@@ -172,7 +174,7 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
             </div>
 
             <div className="cadastro-field">
-              <label className="cadastro-label">CPF</label>
+              <label className="cadastro-label">CPF (opcional)</label>
               <input
                 className={`cadastro-input ${errors.cpf ? "cadastro-input-error" : ""}`}
                 type="text"
@@ -186,7 +188,7 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
             </div>
 
             <div className="cadastro-field">
-              <label className="cadastro-label">Data de nascimento</label>
+              <label className="cadastro-label">Data de nascimento (opcional)</label>
               <input
                 className="cadastro-input"
                 type="text"
@@ -211,14 +213,17 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
             </div>
 
             <div className="cadastro-field">
-              <label className="cadastro-label">Telefone</label>
+              <label className="cadastro-label">Telefone *</label>
               <input
-                className="cadastro-input"
+                className={`cadastro-input ${errors.telefone ? "cadastro-input-error" : ""}`}
                 type="text"
                 placeholder="(00) 00000-0000"
                 value={telefone}
                 onChange={handleTelefoneChange}
               />
+              {errors.telefone && (
+                <span className="cadastro-field-error">{errors.telefone}</span>
+              )}
             </div>
 
             <div className="cadastro-field">

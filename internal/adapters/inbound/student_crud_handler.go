@@ -3,6 +3,7 @@ package inbound
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"catraca-app/internal/models"
@@ -30,6 +31,70 @@ func strPtr(v string) *string {
 	return &v
 }
 
+func nilOrString(v string) interface{} {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return strings.TrimSpace(v)
+}
+
+func normalizarCPF(cpf string) string {
+	var b strings.Builder
+	for _, r := range cpf {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func validarDadosAluno(nome, telefone string) error {
+	if strings.TrimSpace(nome) == "" {
+		return fmt.Errorf("informe o nome do aluno")
+	}
+	if strings.TrimSpace(telefone) == "" {
+		return fmt.Errorf("informe o telefone do aluno")
+	}
+	return nil
+}
+
+// verificarCPFDuplicado compara apenas os dígitos, então CPFs com ou sem
+// pontuação são tratados como o mesmo documento. CPF vazio nunca conflita.
+func verificarCPFDuplicado(db *gorm.DB, cpf string, ignorarID uint) error {
+	digitos := normalizarCPF(cpf)
+	if digitos == "" {
+		return nil
+	}
+
+	var conflito struct {
+		ID   uint
+		Nome string
+	}
+	query := `SELECT id, nome FROM students
+		WHERE id <> ? AND REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(cpf,''),'.',''),'-',''),' ',''),'/','') = ?
+		LIMIT 1`
+	if err := db.Raw(query, ignorarID, digitos).Scan(&conflito).Error; err != nil {
+		return err
+	}
+	if conflito.ID != 0 {
+		return fmt.Errorf("Este CPF já está cadastrado para %s", conflito.Nome)
+	}
+	return nil
+}
+
+func tratarErroCPF(db *gorm.DB, err error, cpf string, ignorarID uint) error {
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "unique constraint failed: students.cpf") {
+		if dupErr := verificarCPFDuplicado(db, cpf, ignorarID); dupErr != nil {
+			return dupErr
+		}
+		return fmt.Errorf("Este CPF já está cadastrado para outro aluno")
+	}
+	return err
+}
+
 func (h *StudentCrudHandler) ListarStudents() ([]models.Student, error) {
 	list := []models.Student{}
 	err := h.db.Order("nome").Find(&list).Error
@@ -40,6 +105,14 @@ func (h *StudentCrudHandler) CriarStudent(nome, cpf, dataNascimento, telefone, e
 	if !h.session.IsAdmin() {
 		return nil, fmt.Errorf("permissão negada")
 	}
+	nome = strings.TrimSpace(nome)
+	cpf = strings.TrimSpace(cpf)
+	if err := validarDadosAluno(nome, telefone); err != nil {
+		return nil, err
+	}
+	if err := verificarCPFDuplicado(h.db, cpf, 0); err != nil {
+		return nil, err
+	}
 	student := models.Student{
 		Nome:             nome,
 		CPF:              cpf,
@@ -49,7 +122,7 @@ func (h *StudentCrudHandler) CriarStudent(nome, cpf, dataNascimento, telefone, e
 		FormaPagamentoID: uintPtr(formaPagamentoID),
 	}
 	if err := h.db.Create(&student).Error; err != nil {
-		return nil, err
+		return nil, tratarErroCPF(h.db, err, cpf, 0)
 	}
 	h.session.RegistrarAudit("criou_aluno", student.ID)
 	return h.BuscarStudent(student.ID)
@@ -67,20 +140,29 @@ func (h *StudentCrudHandler) AtualizarStudent(id uint, nome, cpf, dataNascimento
 	if !h.session.IsAdmin() {
 		return nil, fmt.Errorf("permissão negada")
 	}
-	student, err := h.BuscarStudent(id)
-	if err != nil {
+	if _, err := h.BuscarStudent(id); err != nil {
 		return nil, err
 	}
-	student.Nome = nome
-	student.CPF = cpf
-	student.DataNascimento = strPtr(dataNascimento)
-	student.Telefone = strPtr(telefone)
-	student.TelefoneUrgencia = strPtr(telefoneUrgencia)
-	student.Email = strPtr(email)
-	student.FormaPagamentoID = uintPtr(formaPagamentoID)
-
-	if err := h.db.Save(student).Error; err != nil {
+	nome = strings.TrimSpace(nome)
+	cpf = strings.TrimSpace(cpf)
+	if err := validarDadosAluno(nome, telefone); err != nil {
 		return nil, err
+	}
+	if err := verificarCPFDuplicado(h.db, cpf, id); err != nil {
+		return nil, err
+	}
+
+	updates := map[string]interface{}{
+		"nome":               nome,
+		"cpf":                nilOrString(cpf),
+		"data_nascimento":    strPtr(dataNascimento),
+		"telefone":           strPtr(telefone),
+		"telefone_urgencia":  strPtr(telefoneUrgencia),
+		"email":              strPtr(email),
+		"forma_pagamento_id": uintPtr(formaPagamentoID),
+	}
+	if err := h.db.Model(&models.Student{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		return nil, tratarErroCPF(h.db, err, cpf, id)
 	}
 	h.session.RegistrarAudit("editou_aluno", id)
 	return h.BuscarStudent(id)

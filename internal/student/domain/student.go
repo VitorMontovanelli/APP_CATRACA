@@ -47,8 +47,10 @@ func (s *Student) Validate() error {
 	if strings.TrimSpace(s.Nome) == "" {
 		return ErrEmptyStudentName
 	}
-	if err := ValidateCPF(s.CPF); err != nil {
-		return err
+	if strings.TrimSpace(s.CPF) != "" {
+		if err := ValidateCPF(s.CPF); err != nil {
+			return err
+		}
 	}
 	return nil
 }
