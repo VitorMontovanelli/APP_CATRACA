@@ -117,7 +117,7 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
     if (!nome.trim()) errs.nome = "Nome é obrigatório";
 
     const cpfDigits = cpf.replace(/\D/g, "");
-    if (cpfDigits && (cpfDigits.length !== 11 || !validarCPF(cpf)))
+    if (cpfDigits.length !== 11 || !validarCPF(cpf))
       errs.cpf = "CPF inválido";
 
     if (!telefone.trim()) errs.telefone = "Telefone é obrigatório";
@@ -174,7 +174,7 @@ function CadastroAluno({ onSubmit, onCancel, isLoading }: CadastroAlunoProps) {
             </div>
 
             <div className="cadastro-field">
-              <label className="cadastro-label">CPF (opcional)</label>
+              <label className="cadastro-label">CPF *</label>
               <input
                 className={`cadastro-input ${errors.cpf ? "cadastro-input-error" : ""}`}
                 type="text"

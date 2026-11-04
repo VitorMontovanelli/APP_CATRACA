@@ -30,7 +30,7 @@ func (h *StudentPlansHandler) CriarStudentComPlano(nome, cpf, dataNascimento, te
 
 	nome = strings.TrimSpace(nome)
 	cpf = strings.TrimSpace(cpf)
-	if err := validarDadosAluno(nome, telefone); err != nil {
+	if err := validarDadosAluno(nome, cpf, telefone); err != nil {
 		return nil, err
 	}
 	if err := verificarCPFDuplicado(h.db, cpf, 0); err != nil {

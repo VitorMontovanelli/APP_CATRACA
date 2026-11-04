@@ -72,6 +72,22 @@ function maskCPF(v: string): string {
           .replace(/^(\d{3})(\d{1,3})$/, "$1.$2");
 }
 
+function validarCPF(cpf: string): boolean {
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(digits)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  let rest = (sum * 10) % 11;
+  if (rest === 10) rest = 0;
+  if (rest !== parseInt(digits[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  rest = (sum * 10) % 11;
+  if (rest === 10) rest = 0;
+  return rest === parseInt(digits[10]);
+}
+
 function maskTel(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
   return d.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3")
@@ -293,6 +309,14 @@ function Alunos({ user }: AlunosProps) {
     setError("");
     if (!nome.trim()) {
       setError("Informe o nome do aluno.");
+      return;
+    }
+    if (!cpf.replace(/\D/g, "")) {
+      setError("Informe o CPF do aluno.");
+      return;
+    }
+    if (!validarCPF(cpf)) {
+      setError("CPF inválido. Confira os 11 dígitos.");
       return;
     }
     if (!telefone.trim()) {
@@ -785,7 +809,7 @@ function Alunos({ user }: AlunosProps) {
 
                 <div className="vmd-grid-2">
                   <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vmd-label">CPF (opcional)</label>
+                    <label className="vmd-label">CPF *</label>
                     <input
                       value={cpf}
                       onChange={(e) => setCpf(maskCPF(e.target.value))}

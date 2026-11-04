@@ -48,9 +48,15 @@ func normalizarCPF(cpf string) string {
 	return b.String()
 }
 
-func validarDadosAluno(nome, telefone string) error {
+func validarDadosAluno(nome, cpf, telefone string) error {
 	if strings.TrimSpace(nome) == "" {
 		return fmt.Errorf("informe o nome do aluno")
+	}
+	if normalizarCPF(cpf) == "" {
+		return fmt.Errorf("informe o CPF do aluno")
+	}
+	if len(normalizarCPF(cpf)) != 11 {
+		return fmt.Errorf("CPF inválido: informe os 11 dígitos")
 	}
 	if strings.TrimSpace(telefone) == "" {
 		return fmt.Errorf("informe o telefone do aluno")
@@ -107,7 +113,7 @@ func (h *StudentCrudHandler) CriarStudent(nome, cpf, dataNascimento, telefone, e
 	}
 	nome = strings.TrimSpace(nome)
 	cpf = strings.TrimSpace(cpf)
-	if err := validarDadosAluno(nome, telefone); err != nil {
+	if err := validarDadosAluno(nome, cpf, telefone); err != nil {
 		return nil, err
 	}
 	if err := verificarCPFDuplicado(h.db, cpf, 0); err != nil {
@@ -145,7 +151,7 @@ func (h *StudentCrudHandler) AtualizarStudent(id uint, nome, cpf, dataNascimento
 	}
 	nome = strings.TrimSpace(nome)
 	cpf = strings.TrimSpace(cpf)
-	if err := validarDadosAluno(nome, telefone); err != nil {
+	if err := validarDadosAluno(nome, cpf, telefone); err != nil {
 		return nil, err
 	}
 	if err := verificarCPFDuplicado(h.db, cpf, id); err != nil {

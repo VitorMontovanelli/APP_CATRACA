@@ -30,31 +30,30 @@ func countStudents(t *testing.T, db *gorm.DB, where string, args ...interface{})
 	return total
 }
 
-func TestCriarAlunoSemCPFGravaNull(t *testing.T) {
-	h, _, plans := setupStudentTestDB(t)
+func TestCriarAlunoSemCPFEBloqueado(t *testing.T) {
+	_, _, plans := setupStudentTestDB(t)
 
-	if _, err := plans.CriarStudentComPlano("Ana Silva", "", "", "(11) 99999-1111", "", "", 0, 0, 0); err != nil {
-		t.Fatalf("primeiro aluno sem CPF deveria salvar: %v", err)
-	}
-	if _, err := plans.CriarStudentComPlano("Bia Souza", "", "", "(11) 99999-2222", "", "", 0, 0, 0); err != nil {
-		t.Fatalf("segundo aluno sem CPF deveria salvar: %v", err)
+	if _, err := plans.CriarStudentComPlano("Ana Silva", "", "", "(11) 99999-1111", "", "", 0, 0, 0); err == nil {
+		t.Fatal("esperava erro para CPF vazio")
+	} else if !strings.Contains(err.Error(), "CPF") {
+		t.Fatalf("esperava mensagem sobre CPF, veio: %v", err)
 	}
 
-	if got := countStudents(t, h.StudentCrudHandler.db, "cpf IS NULL"); got != 2 {
-		t.Fatalf("esperava 2 CPFs NULL, encontrou %d", got)
-	}
-	if got := countStudents(t, h.StudentCrudHandler.db, "cpf = ''"); got != 0 {
-		t.Fatalf("não deveria existir CPF vazio, encontrou %d", got)
+	if _, err := plans.CriarStudentComPlano("Ana Silva", "111.444.777-35", "", "(11) 99999-1111", "", "", 0, 0, 0); err != nil {
+		t.Fatalf("aluno com CPF deveria salvar: %v", err)
 	}
 }
 
-func TestCriarAlunoExigeNomeETelefone(t *testing.T) {
+func TestCriarAlunoExigeNomeCPFETelefone(t *testing.T) {
 	_, _, plans := setupStudentTestDB(t)
 
-	if _, err := plans.CriarStudentComPlano("", "", "", "(11) 99999-1111", "", "", 0, 0, 0); err == nil {
+	if _, err := plans.CriarStudentComPlano("", "111.444.777-35", "", "(11) 99999-1111", "", "", 0, 0, 0); err == nil {
 		t.Fatal("esperava erro para nome vazio")
 	}
-	if _, err := plans.CriarStudentComPlano("Ana", "", "", "", "", "", 0, 0, 0); err == nil {
+	if _, err := plans.CriarStudentComPlano("Ana", "", "", "(11) 99999-1111", "", "", 0, 0, 0); err == nil {
+		t.Fatal("esperava erro para CPF vazio")
+	}
+	if _, err := plans.CriarStudentComPlano("Ana", "111.444.777-35", "", "", "", "", 0, 0, 0); err == nil {
 		t.Fatal("esperava erro para telefone vazio")
 	}
 }
@@ -76,7 +75,7 @@ func TestCriarAlunoComCPFDuplicadoMostraNome(t *testing.T) {
 	}
 }
 
-func TestAtualizarAlunoLimpandoCPFGravaNull(t *testing.T) {
+func TestAtualizarAlunoNaoPermiteLimparCPF(t *testing.T) {
 	h, crud, _ := setupStudentTestDB(t)
 
 	created, err := crud.CriarStudent("Ana Silva", "111.444.777-35", "2000-01-01", "(11) 99999-1111", "", 0)
@@ -84,11 +83,18 @@ func TestAtualizarAlunoLimpandoCPFGravaNull(t *testing.T) {
 		t.Fatalf("não deveria falhar ao criar: %v", err)
 	}
 
-	if _, err := crud.AtualizarStudent(created.ID, "Ana Silva", "", "", "(11) 99999-1111", "", "", 0); err != nil {
-		t.Fatalf("não deveria falhar ao limpar o CPF: %v", err)
+	if _, err := crud.AtualizarStudent(created.ID, "Ana Silva", "", "", "(11) 99999-1111", "", "", 0); err == nil {
+		t.Fatal("esperava erro ao tentar limpar o CPF")
+	} else if !strings.Contains(err.Error(), "CPF") {
+		t.Fatalf("esperava mensagem sobre CPF, veio: %v", err)
 	}
-	if got := countStudents(t, h.StudentCrudHandler.db, "id = ? AND cpf IS NULL", created.ID); got != 1 {
-		t.Fatalf("esperava CPF NULL após edição, encontrou %d", got)
+	if got := countStudents(t, h.StudentCrudHandler.db, "id = ? AND cpf = ?", created.ID, "111.444.777-35"); got != 1 {
+		t.Fatalf("CPF deveria continuar gravado, encontrou %d", got)
+	}
+
+	// Data de nascimento continua opcional e pode ser limpa.
+	if _, err := crud.AtualizarStudent(created.ID, "Ana Silva", "111.444.777-35", "", "(11) 99999-1111", "", "", 0); err != nil {
+		t.Fatalf("não deveria falhar ao limpar a data de nascimento: %v", err)
 	}
 	if got := countStudents(t, h.StudentCrudHandler.db, "id = ? AND data_nascimento IS NULL", created.ID); got != 1 {
 		t.Fatalf("esperava data de nascimento NULL após edição, encontrou %d", got)
