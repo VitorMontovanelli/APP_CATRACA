@@ -96,6 +96,9 @@ func TestMigrateEmptyStudentCPFToNullSemDadosNaoCriaBackup(t *testing.T) {
 	if err := database.Exec("INSERT INTO students (nome, cpf) VALUES (?, ?)", "Ana", "147.089.317-78").Error; err != nil {
 		t.Fatalf("insert: %v", err)
 	}
+	if err := database.Exec("INSERT INTO students (nome, cpf) VALUES (?, NULL)", "Bia").Error; err != nil {
+		t.Fatalf("insert null: %v", err)
+	}
 
 	MigrateEmptyStudentCPFToNull(database)
 
@@ -104,6 +107,6 @@ func TestMigrateEmptyStudentCPFToNullSemDadosNaoCriaBackup(t *testing.T) {
 		t.Fatalf("glob backup: %v", err)
 	}
 	if len(backups) != 0 {
-		t.Fatalf("não deveria criar backup sem CPF vazio, encontrou %d", len(backups))
+		t.Fatalf("não deveria criar backup sem CPF vazio (NULL não conta), encontrou %d", len(backups))
 	}
 }

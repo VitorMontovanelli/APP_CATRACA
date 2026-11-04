@@ -15,8 +15,10 @@ import (
 // único de students.cpf aceita vários NULL, mas apenas um texto vazio.
 // Antes de alterar qualquer registro, gera um snapshot do banco em disco.
 func MigrateEmptyStudentCPFToNull(db *gorm.DB) {
+	const somenteTextoVazio = "cpf IS NOT NULL AND TRIM(cpf) = ''"
+
 	var total int64
-	if err := db.Raw("SELECT COUNT(*) FROM students WHERE TRIM(COALESCE(cpf,'')) = ''").Scan(&total).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM students WHERE " + somenteTextoVazio).Scan(&total).Error; err != nil {
 		log.Printf("Aviso: não foi possível verificar CPFs vazios: %v", err)
 		return
 	}
@@ -31,7 +33,7 @@ func MigrateEmptyStudentCPFToNull(db *gorm.DB) {
 	}
 	log.Printf("Backup do banco gerado em %s antes de converter %d CPF(s) vazio(s) em NULL", backup, total)
 
-	if err := db.Exec("UPDATE students SET cpf = NULL WHERE TRIM(COALESCE(cpf,'')) = ''").Error; err != nil {
+	if err := db.Exec("UPDATE students SET cpf = NULL WHERE " + somenteTextoVazio).Error; err != nil {
 		log.Printf("Aviso: falha ao converter CPFs vazios em NULL: %v", err)
 		return
 	}
