@@ -6,6 +6,10 @@ export function AdicionarAgendamento(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['AdicionarAgendamento'](arg1, arg2, arg3, arg4);
 }
 
+export function AdicionarAgendamentoComHorario(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['AdicionarAgendamentoComHorario'](arg1, arg2, arg3, arg4);
+}
+
 export function AdicionarAgendamentoIndividual(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['App']['AdicionarAgendamentoIndividual'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
@@ -52,6 +56,10 @@ export function AtualizarAgendamentoIndividual(arg1, arg2, arg3, arg4) {
 
 export function AtualizarConfigGateway(arg1, arg2) {
   return window['go']['main']['App']['AtualizarConfigGateway'](arg1, arg2);
+}
+
+export function AtualizarHorarioAgendamento(arg1, arg2) {
+  return window['go']['main']['App']['AtualizarHorarioAgendamento'](arg1, arg2);
 }
 
 export function AtualizarPlano(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
@@ -178,6 +186,10 @@ export function GerarInvoice(arg1) {
   return window['go']['main']['App']['GerarInvoice'](arg1);
 }
 
+export function GerarProximaFatura(arg1) {
+  return window['go']['main']['App']['GerarProximaFatura'](arg1);
+}
+
 export function IniciarStreamWebcam() {
   return window['go']['main']['App']['IniciarStreamWebcam']();
 }
@@ -270,6 +282,10 @@ export function ObterConfigTelegram() {
   return window['go']['main']['App']['ObterConfigTelegram']();
 }
 
+export function ObterConfiguracaoAgenda() {
+  return window['go']['main']['App']['ObterConfiguracaoAgenda']();
+}
+
 export function ObterEstatisticasAcesso(arg1) {
   return window['go']['main']['App']['ObterEstatisticasAcesso'](arg1);
 }
@@ -280,6 +296,10 @@ export function ObterFotoAluno(arg1) {
 
 export function ObterMetricasHome() {
   return window['go']['main']['App']['ObterMetricasHome']();
+}
+
+export function OnShutdown() {
+  return window['go']['main']['App']['OnShutdown']();
 }
 
 export function PararStreamWebcam() {

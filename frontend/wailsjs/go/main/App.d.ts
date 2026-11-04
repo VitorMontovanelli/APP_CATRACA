@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function AdicionarAgendamento(arg1:string,arg2:number,arg3:string,arg4:string):Promise<main.Agendamento>;
 
+export function AdicionarAgendamentoComHorario(arg1:string,arg2:number,arg3:string,arg4:string):Promise<main.Agendamento>;
+
 export function AdicionarAgendamentoIndividual(arg1:string,arg2:number,arg3:string,arg4:string,arg5:string,arg6:string):Promise<main.AgendamentoIndividual>;
 
 export function AlterarFoto(arg1:string):Promise<void>;
@@ -27,6 +29,8 @@ export function AtivarUsuario(arg1:number,arg2:boolean):Promise<void>;
 export function AtualizarAgendamentoIndividual(arg1:number,arg2:string,arg3:string,arg4:string):Promise<main.AgendamentoIndividual>;
 
 export function AtualizarConfigGateway(arg1:number,arg2:string):Promise<void>;
+
+export function AtualizarHorarioAgendamento(arg1:number,arg2:string):Promise<main.Agendamento>;
 
 export function AtualizarPlano(arg1:number,arg2:string,arg3:string,arg4:number,arg5:number,arg6:number,arg7:any):Promise<main.Plan>;
 
@@ -90,6 +94,8 @@ export function EnviarBackupTelegram():Promise<string>;
 
 export function GerarInvoice(arg1:number):Promise<main.Invoice>;
 
+export function GerarProximaFatura(arg1:number):Promise<void>;
+
 export function IniciarStreamWebcam():Promise<string>;
 
 export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
@@ -136,11 +142,15 @@ export function ObterConfigAgendaIndividual():Promise<main.ConfigAgendaIndividua
 
 export function ObterConfigTelegram():Promise<main.BackupConfig>;
 
+export function ObterConfiguracaoAgenda():Promise<main.ConfigAgenda>;
+
 export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEstatistica>>;
 
 export function ObterFotoAluno(arg1:number):Promise<string>;
 
 export function ObterMetricasHome():Promise<main.MetricasHome>;
+
+export function OnShutdown():Promise<void>;
 
 export function PararStreamWebcam():Promise<void>;
 

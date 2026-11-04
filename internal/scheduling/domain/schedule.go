@@ -5,7 +5,42 @@ import (
 	"time"
 )
 
-const CapacidadeDiaPadrao = 10
+const CapacidadeDiaPadrao = 48
+
+// HorariosAula é a lista única de horários do calendário de Pilates.
+var HorariosAula = []string{
+	"06:00", "07:00", "08:00", "09:00", "10:00",
+	"15:00", "16:00", "17:00", "18:00", "19:00",
+}
+
+func HorarioAulaValido(hora string) bool {
+	for _, h := range HorariosAula {
+		if h == hora {
+			return true
+		}
+	}
+	return false
+}
+
+func TurnoDoHorario(hora string) string {
+	switch hora {
+	case "06:00", "07:00", "08:00", "09:00", "10:00":
+		return "manha"
+	case "15:00", "16:00", "17:00", "18:00":
+		return "tarde"
+	default:
+		return "noite"
+	}
+}
+
+// DiaIndisponivel informa se a data cai em sábado ou domingo.
+func DiaIndisponivel(data string) bool {
+	t, err := time.Parse("2006-01-02", data)
+	if err != nil {
+		return false
+	}
+	return t.Weekday() == time.Saturday || t.Weekday() == time.Sunday
+}
 
 var (
 	ErrCapacidadeEsgotada   = errors.New("capacidade de vagas esgotada para o dia selecionado")

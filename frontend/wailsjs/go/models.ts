@@ -61,6 +61,7 @@ export namespace main {
 	    student_id?: number;
 	    nome: string;
 	    turno: string;
+	    hora: string;
 	    telefone?: string;
 	    observacao?: string;
 	    // Go type: time
@@ -77,6 +78,7 @@ export namespace main {
 	        this.student_id = source["student_id"];
 	        this.nome = source["nome"];
 	        this.turno = source["turno"];
+	        this.hora = source["hora"];
 	        this.telefone = source["telefone"];
 	        this.observacao = source["observacao"];
 	        this.created_at = this.convertValues(source["created_at"], null);
@@ -309,6 +311,20 @@ export namespace main {
 		}
 	}
 	
+	export class ConfigAgenda {
+	    capacidade_padrao: number;
+	    horarios: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ConfigAgenda(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.capacidade_padrao = source["capacidade_padrao"];
+	        this.horarios = source["horarios"];
+	    }
+	}
 	export class ConfigAgendaIndividual {
 	    limite_diario: number;
 	    limite_maximo: number;
@@ -344,6 +360,7 @@ export namespace main {
 	    total: number;
 	    capacidade: number;
 	    praticas: string;
+	    contagens: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new DiaIndividualAgenda(source);
@@ -355,6 +372,7 @@ export namespace main {
 	        this.total = source["total"];
 	        this.capacidade = source["capacidade"];
 	        this.praticas = source["praticas"];
+	        this.contagens = source["contagens"];
 	    }
 	}
 	export class InadimplenteReport {
@@ -923,5 +941,3 @@ export namespace main {
 
 }
 
-
-export import models = main;

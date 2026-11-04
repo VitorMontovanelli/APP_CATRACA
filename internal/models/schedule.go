@@ -10,6 +10,7 @@ type Agendamento struct {
 	StudentID  *uint     `gorm:"index" json:"student_id"`
 	Nome       string    `gorm:"size:255;not null" json:"nome"`
 	Turno      string    `gorm:"size:10;not null;check:turno IN ('manha','tarde','noite')" json:"turno"`
+	Hora       string    `gorm:"size:5;not null;default:''" json:"hora"`
 	Telefone   *string   `gorm:"size:20" json:"telefone"`
 	Observacao *string   `gorm:"size:500" json:"observacao"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
@@ -24,6 +25,18 @@ type DiaAgenda struct {
 type CapacidadeDia struct {
 	Data       string `gorm:"primaryKey;size:10" json:"data"`
 	Capacidade int    `gorm:"not null" json:"capacidade"`
+}
+
+// TableName fixa a tabela usada pelo restante do sistema (SQL manual e
+// calendários). Sem isso o GORM grava em "capacidade_dia", enquanto as
+// consultas leem "capacidade_dias".
+func (CapacidadeDia) TableName() string {
+	return "capacidade_dias"
+}
+
+type ConfigAgenda struct {
+	CapacidadePadrao int      `json:"capacidade_padrao"`
+	Horarios         []string `json:"horarios"`
 }
 
 const (

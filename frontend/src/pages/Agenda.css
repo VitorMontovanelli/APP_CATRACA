@@ -132,6 +132,32 @@
   box-shadow: 0 0 0 2px rgba(199, 157, 51, 0.35);
 }
 
+.agenda-day-indisponivel,
+.agenda-day-indisponivel:disabled {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  opacity: 1;
+  cursor: default;
+}
+.agenda-day-indisponivel:not(:disabled) {
+  cursor: pointer;
+}
+.agenda-day-indisponivel:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: none;
+  box-shadow: none;
+}
+.agenda-day-indisponivel .agenda-day-num {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+.agenda-day-indisponivel .agenda-day-count {
+  background: transparent;
+  color: var(--text-dim);
+  padding: 0;
+  font-weight: 500;
+}
+
 .agenda-day-verde {
   background: rgba(16, 185, 129, 0.14);
   border-color: rgba(16, 185, 129, 0.45);

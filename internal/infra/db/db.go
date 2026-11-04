@@ -22,6 +22,7 @@ func InitDB() *gorm.DB {
 
 	autoMigrateModels(db)
 	executeRawTableMigrations(db)
+	MigrateLegacyCapacityTable(db)
 	migrateColumns(db)
 	MigrateEmptyStudentCPFToNull(db)
 
@@ -80,4 +81,7 @@ func migrateColumns(db *gorm.DB) {
 			db.Migrator().AddColumn(c.dst, c.column)
 		}
 	}
+	// Agendamentos antigos não possuem horário; normaliza NULL para string
+	// vazia para que a listagem exiba "Manhã (horário não definido)".
+	db.Exec("UPDATE agendamentos SET hora = '' WHERE hora IS NULL")
 }

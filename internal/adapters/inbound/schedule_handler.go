@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"catraca-app/internal/models"
+	"catraca-app/internal/scheduling/domain"
 	"gorm.io/gorm"
 )
-
-const CapacidadeDiaPadrao = 10
 
 type ScheduleHandler struct {
 	ctx     context.Context
@@ -44,9 +43,21 @@ func turnoValido(turno string) bool {
 func (h *ScheduleHandler) capacidadeDoDia(data string) int {
 	var cd models.CapacidadeDia
 	if err := h.db.Where("data = ?", data).First(&cd).Error; err != nil {
-		return CapacidadeDiaPadrao
+		return domain.CapacidadeDiaPadrao
 	}
 	return cd.Capacidade
+}
+
+func (h *ScheduleHandler) ObterConfiguracaoAgenda() (*models.ConfigAgenda, error) {
+	if !h.session.IsAdmin() {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	horarios := make([]string, len(domain.HorariosAula))
+	copy(horarios, domain.HorariosAula)
+	return &models.ConfigAgenda{
+		CapacidadePadrao: domain.CapacidadeDiaPadrao,
+		Horarios:         horarios,
+	}, nil
 }
 
 func (h *ScheduleHandler) ListarAgendamentosMes(ano, mes int) ([]models.DiaAgenda, error) {
@@ -58,7 +69,7 @@ func (h *ScheduleHandler) ListarAgendamentosMes(ano, mes int) ([]models.DiaAgend
 		LEFT JOIN capacidade_dias c ON c.data = a.data
 		WHERE a.data LIKE ?
 		GROUP BY a.data, c.capacidade
-	`, CapacidadeDiaPadrao, prefix+"%").Scan(&list).Error
+	`, domain.CapacidadeDiaPadrao, prefix+"%").Scan(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +85,9 @@ func (h *ScheduleHandler) DefinirCapacidadeDia(data string, capacidade int) erro
 	}
 	if _, err := time.Parse("2006-01-02", data); err != nil {
 		return fmt.Errorf("data inválida: use o formato DD/MM/AAAA")
+	}
+	if domain.DiaIndisponivel(data) {
+		return fmt.Errorf("sábados e domingos estão indisponíveis")
 	}
 	if capacidade < 1 {
 		return fmt.Errorf("a capacidade deve ser de no mínimo 1 vaga")
@@ -107,7 +121,7 @@ func (h *ScheduleHandler) ListarCapacidadesMes(ano, mes int) ([]models.Capacidad
 
 func (h *ScheduleHandler) ListarAgendamentosDia(data string) ([]models.Agendamento, error) {
 	list := []models.Agendamento{}
-	err := h.db.Where("data = ?", data).Order("turno, id").Find(&list).Error
+	err := h.db.Where("data = ?", data).Order("CASE WHEN hora = '' THEN 1 ELSE 0 END, hora, id").Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +147,7 @@ func (h *ScheduleHandler) AdicionarAgendamento(data string, alunoID uint, nome, 
 		return nil, err
 	}
 
-	if err := h.validarCapacidadeEDUplicidade(data, alunoID); err != nil {
+	if err := h.validarCapacidadeEDuplicidade(data, alunoID); err != nil {
 		return nil, err
 	}
 
@@ -148,6 +162,77 @@ func (h *ScheduleHandler) AdicionarAgendamento(data string, alunoID uint, nome, 
 	}
 	h.session.RegistrarAuditComDetalhes("agendou_aluno", ag.ID, fmt.Sprintf("data=%s, aluno=%s, student_id=%d, turno=%s", data, nome, alunoID, turno))
 	return &ag, nil
+}
+
+func (h *ScheduleHandler) AdicionarAgendamentoComHorario(data string, alunoID uint, nome, hora string) (*models.Agendamento, error) {
+	if !h.session.IsAdmin() {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	if _, err := time.Parse("2006-01-02", data); err != nil {
+		return nil, fmt.Errorf("data inválida: use o formato DD/MM/AAAA")
+	}
+	if !domain.HorarioAulaValido(hora) {
+		return nil, fmt.Errorf("horário inválido: escolha um dos horários disponíveis")
+	}
+
+	nome, err := h.resolverNomeAluno(alunoID, nome)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := h.validarCapacidadeEDuplicidade(data, alunoID); err != nil {
+		return nil, err
+	}
+	if err := h.garantirDiaComCapacidadePadrao(data); err != nil {
+		return nil, err
+	}
+
+	ag := models.Agendamento{
+		Data:      data,
+		StudentID: uintPtr(alunoID),
+		Nome:      nome,
+		Turno:     domain.TurnoDoHorario(hora),
+		Hora:      hora,
+	}
+	if err := h.db.Create(&ag).Error; err != nil {
+		return nil, err
+	}
+	h.session.RegistrarAuditComDetalhes("agendou_aluno", ag.ID, fmt.Sprintf("data=%s, aluno=%s, student_id=%d, hora=%s", data, nome, alunoID, hora))
+	return &ag, nil
+}
+
+func (h *ScheduleHandler) AtualizarHorarioAgendamento(id uint, hora string) (*models.Agendamento, error) {
+	if !h.session.IsAdmin() {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	if !domain.HorarioAulaValido(hora) {
+		return nil, fmt.Errorf("horário inválido: escolha um dos horários disponíveis")
+	}
+	var ag models.Agendamento
+	if err := h.db.First(&ag, id).Error; err != nil {
+		return nil, fmt.Errorf("agendamento não encontrado")
+	}
+	if domain.DiaIndisponivel(ag.Data) {
+		return nil, fmt.Errorf("sábados e domingos estão indisponíveis")
+	}
+	ag.Hora = hora
+	ag.Turno = domain.TurnoDoHorario(hora)
+	if err := h.db.Save(&ag).Error; err != nil {
+		return nil, err
+	}
+	h.session.RegistrarAuditComDetalhes("editou_horario_agendamento", ag.ID, fmt.Sprintf("data=%s, aluno=%s, hora=%s", ag.Data, ag.Nome, hora))
+	return &ag, nil
+}
+
+func (h *ScheduleHandler) garantirDiaComCapacidadePadrao(data string) error {
+	var count int64
+	if err := h.db.Model(&models.CapacidadeDia{}).Where("data = ?", data).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	return h.db.Create(&models.CapacidadeDia{Data: data, Capacidade: domain.CapacidadeDiaPadrao}).Error
 }
 
 func (h *ScheduleHandler) resolverNomeAluno(alunoID uint, nome string) (string, error) {
@@ -165,7 +250,11 @@ func (h *ScheduleHandler) resolverNomeAluno(alunoID uint, nome string) (string, 
 	return nome, nil
 }
 
-func (h *ScheduleHandler) validarCapacidadeEDUplicidade(data string, alunoID uint) error {
+func (h *ScheduleHandler) validarCapacidadeEDuplicidade(data string, alunoID uint) error {
+	if domain.DiaIndisponivel(data) {
+		return fmt.Errorf("sábados e domingos estão indisponíveis para agendamento")
+	}
+
 	var count int64
 	h.db.Model(&models.Agendamento{}).Where("data = ?", data).Count(&count)
 	capacidade := h.capacidadeDoDia(data)
