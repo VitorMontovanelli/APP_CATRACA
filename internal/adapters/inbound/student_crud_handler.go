@@ -132,7 +132,9 @@ func (h *StudentCrudHandler) ListarStudentsComPlanos() ([]models.StudentComPlano
 	var raw []studentRawRow
 	query := `SELECT s.id, s.nome, s.cpf, s.data_nascimento, s.telefone, s.telefone_urgencia, s.email, s.laudo_medico, s.foto,
 		s.forma_pagamento_id, s.data_entrada, s.observacao, s.ativo, s.created_at, s.updated_at,
-		p.name, p.price_cents, sp.status, sp.id, pm.name, sp.due_day, i.status, i.amount_cents, i.due_date
+		p.name AS plano_nome, p.price_cents AS plano_preco, sp.status AS plano_status, sp.id AS student_plan_id,
+		pm.name AS payment_method, sp.due_day AS due_day, i.status AS ultima_fatura, i.amount_cents AS fatura_valor,
+		i.due_date AS fatura_vencimento
 		FROM students s
 		LEFT JOIN student_plans sp ON sp.student_id = s.id AND sp.status = 'active'
 		LEFT JOIN plans p ON p.id = sp.plan_id

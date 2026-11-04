@@ -83,6 +83,15 @@ function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function mensagemAmigavel(e: any): string {
+  const bruto = e && typeof e === "object" && "message" in e ? String((e as any).message) : String(e);
+  const msg = bruto.replace(/^Error:\s*/i, "").trim();
+  if (/record not found/i.test(msg)) {
+    return "aluno não encontrado. Atualize a lista e tente novamente.";
+  }
+  return msg;
+}
+
 const statusBadgeClasses: Record<string, string> = {
   pending: "vmd-badge vmd-badge-warning",
   paid: "vmd-badge vmd-badge-success",
@@ -285,26 +294,41 @@ function Alunos({ user }: AlunosProps) {
     setUploadingLaudo(true);
     try {
       let studentId: number | null = editId;
-      if (studentId) {
-        await AtualizarStudent(studentId, nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId);
-        await AtualizarPlanoAluno(studentId, planId, formaPagamentoId, dueDay);
-      } else {
-        const created = (await CriarStudentComPlano(
-          nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId, planId, dueDay
-        )) as unknown as StudentComPlano;
-        studentId = created.id;
+      try {
+        if (studentId) {
+          await AtualizarStudent(studentId, nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId);
+          await AtualizarPlanoAluno(studentId, planId, formaPagamentoId, dueDay);
+        } else {
+          const created = (await CriarStudentComPlano(
+            nome, cpf, dataNasc, telefone, telefoneUrgencia, email, formaPagamentoId, planId, dueDay
+          )) as unknown as StudentComPlano;
+          studentId = created.id;
+        }
+      } catch (e: any) {
+        setError("Não foi possível salvar os dados do aluno. " + mensagemAmigavel(e));
+        return;
       }
 
       if (studentId) {
         const student = students.find((st) => st.id === studentId);
         const hadLaudo = !!student?.laudo_medico;
-        if (laudoRemoved && hadLaudo) {
-          await RemoverLaudoAluno(studentId);
+        try {
+          if (laudoRemoved && hadLaudo) {
+            await RemoverLaudoAluno(studentId);
+          }
+          if (laudoFile) {
+            const base64 = await fileToBase64(laudoFile);
+            await SalvarLaudoAluno(studentId, base64, laudoFile.name);
+          }
+        } catch (e: any) {
+          // Mantém o modal aberto e os campos digitados para o usuário tentar de novo.
+          // Também fixa o ID do aluno já salvo, evitando duplicá-lo num novo clique em Salvar.
+          setEditId(studentId);
+          await load().catch(() => {});
+          setError("Não foi possível salvar o laudo. Os outros dados do aluno foram salvos. " + mensagemAmigavel(e));
+          return;
         }
-        if (laudoFile) {
-          const base64 = await fileToBase64(laudoFile);
-          await SalvarLaudoAluno(studentId, base64, laudoFile.name);
-        }
+
         const hadFoto = !!student?.foto;
         if (photoRemoved && hadFoto) {
           await RemoverFotoAluno(studentId);
@@ -317,7 +341,7 @@ function Alunos({ user }: AlunosProps) {
       setShowModal(false);
       await load();
     } catch (e) {
-      setError(String(e));
+      setError(mensagemAmigavel(e));
     } finally {
       setUploadingLaudo(false);
     }
