@@ -30,6 +30,8 @@ export function AtualizarAgendamentoIndividual(arg1:number,arg2:string,arg3:stri
 
 export function AtualizarConfigGateway(arg1:number,arg2:string):Promise<void>;
 
+export function AtualizarPaymentMethod(arg1:number,arg2:string,arg3:string,arg4:number,arg5:number):Promise<main.PaymentMethod>;
+
 export function AtualizarHorarioAgendamento(arg1:number,arg2:string):Promise<main.Agendamento>;
 
 export function AtualizarPlano(arg1:number,arg2:string,arg3:string,arg4:number,arg5:number,arg6:number,arg7:any):Promise<main.Plan>;
@@ -87,6 +89,8 @@ export function DefinirLimiteDiarioIndividual(arg1:number):Promise<void>;
 export function DeletarDadosTeste():Promise<void>;
 
 export function DeletarInvoice(arg1:number):Promise<void>;
+
+export function DeletarPaymentMethod(arg1:number):Promise<void>;
 
 export function DeletarPlano(arg1:number):Promise<void>;
 

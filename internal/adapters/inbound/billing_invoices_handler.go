@@ -78,7 +78,9 @@ func (h *BillingInvoicesHandler) BuscarInvoice(id uint) (*models.Invoice, error)
 		i.status, i.payment_method_id, i.due_date, i.paid_at, i.paid_amount_cents,
 		i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
 		COALESCE(i.confirmed_by, '') AS confirmed_by, i.refunded_by, i.refunded_at,
-		s.nome AS student_name, p.name AS plan_name, pm.name AS payment_method_name
+		i.paid_method_name, i.paid_fee_percent, i.paid_fee_fixed_cents,
+		s.nome AS student_name, p.name AS plan_name,
+		COALESCE(NULLIF(i.paid_method_name, ''), pm.name, '') AS payment_method_name
 		FROM invoices i JOIN students s ON s.id = i.student_id JOIN plans p ON p.id = i.plan_id
 		LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id WHERE i.id = ?`
 	if err := h.db.Raw(query, id).Scan(&raw).Error; err != nil {
@@ -105,7 +107,9 @@ func (h *BillingInvoicesHandler) listarInvoices(where string, args ...interface{
 		i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
 		COALESCE(i.confirmed_by, '') AS confirmed_by,
 		i.refunded_by, i.refunded_at,
-		s.nome AS student_name, p.name AS plan_name, COALESCE(pm.name, '') AS payment_method_name
+		i.paid_method_name, i.paid_fee_percent, i.paid_fee_fixed_cents,
+		s.nome AS student_name, p.name AS plan_name,
+		COALESCE(NULLIF(i.paid_method_name, ''), pm.name, '') AS payment_method_name
 		FROM invoices i JOIN students s ON s.id = i.student_id JOIN plans p ON p.id = i.plan_id
 		LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id WHERE ` + where
 	if err := h.db.Raw(query, args...).Scan(&raw).Error; err != nil {
@@ -173,6 +177,14 @@ func (h *BillingInvoicesHandler) ConfirmarPagamento(invoiceID uint, paymentMetho
 		return fmt.Errorf("o valor pago não pode ser negativo")
 	}
 
+	var metodo models.PaymentMethod
+	if err := h.db.First(&metodo, paymentMethodID).Error; err != nil {
+		return fmt.Errorf("forma de pagamento não encontrada")
+	}
+	if !metodo.Enabled {
+		return fmt.Errorf("esta forma de pagamento está desativada")
+	}
+
 	paidAt := time.Now()
 	if strings.TrimSpace(paidDate) != "" {
 		parsed, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(paidDate), time.Local)
@@ -184,19 +196,22 @@ func (h *BillingInvoicesHandler) ConfirmarPagamento(invoiceID uint, paymentMetho
 
 	confirmedBy := h.actorName()
 	err := h.db.Model(&models.Invoice{}).Where("id = ?", invoiceID).Updates(map[string]interface{}{
-		"status":            "paid",
-		"payment_method_id": paymentMethodID,
-		"paid_at":           paidAt,
-		"paid_amount_cents": paidAmountCents,
-		"confirmed_by":      confirmedBy,
-		"refunded_by":       "",
-		"refunded_at":       nil,
+		"status":               "paid",
+		"payment_method_id":    paymentMethodID,
+		"paid_method_name":     metodo.Name,
+		"paid_fee_percent":     metodo.FeePercent,
+		"paid_fee_fixed_cents": metodo.FeeFixedCents,
+		"paid_at":              paidAt,
+		"paid_amount_cents":    paidAmountCents,
+		"confirmed_by":         confirmedBy,
+		"refunded_by":          "",
+		"refunded_at":          nil,
 	}).Error
 	if err != nil {
 		return err
 	}
 	h.session.RegistrarAuditComDetalhes("confirmou_pagamento", invoiceID,
-		fmt.Sprintf("valor=%d, metodo=%d, data=%s, por=%s", paidAmountCents, paymentMethodID, paidAt.Format("2006-01-02"), confirmedBy))
+		fmt.Sprintf("valor=%d, metodo=%d (%s), data=%s, por=%s", paidAmountCents, paymentMethodID, metodo.Name, paidAt.Format("2006-01-02"), confirmedBy))
 	h.recurring.GerarProximaFatura(invoiceID)
 	return nil
 }
@@ -219,13 +234,17 @@ func (h *BillingInvoicesHandler) EstornarPagamento(invoiceID uint) error {
 	refundedBy := h.actorName()
 	nota := fmt.Sprintf("Estornado por %s em %s", refundedBy, now.Format("02/01/2006 15:04"))
 	err := h.db.Model(&models.Invoice{}).Where("id = ?", invoiceID).Updates(map[string]interface{}{
-		"status":            "pending",
-		"paid_at":           nil,
-		"paid_amount_cents": nil,
-		"confirmed_by":      "",
-		"refunded_by":       refundedBy,
-		"refunded_at":       now,
-		"notes":             gorm.Expr("COALESCE(notes || ' | ', '') || ?", nota),
+		"status":               "pending",
+		"payment_method_id":    nil,
+		"paid_method_name":     "",
+		"paid_fee_percent":     0,
+		"paid_fee_fixed_cents": 0,
+		"paid_at":              nil,
+		"paid_amount_cents":    nil,
+		"confirmed_by":         "",
+		"refunded_by":          refundedBy,
+		"refunded_at":          now,
+		"notes":                gorm.Expr("COALESCE(notes || ' | ', '') || ?", nota),
 	}).Error
 	if err != nil {
 		return err

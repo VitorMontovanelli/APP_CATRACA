@@ -427,6 +427,9 @@ export namespace main {
 	    amount_cents: number;
 	    status: string;
 	    payment_method_id?: number;
+	    paid_method_name: string;
+	    paid_fee_percent: number;
+	    paid_fee_fixed_cents: number;
 	    due_date: string;
 	    // Go type: time
 	    paid_at?: any;
@@ -459,6 +462,9 @@ export namespace main {
 	        this.amount_cents = source["amount_cents"];
 	        this.status = source["status"];
 	        this.payment_method_id = source["payment_method_id"];
+	        this.paid_method_name = source["paid_method_name"];
+	        this.paid_fee_percent = source["paid_fee_percent"];
+	        this.paid_fee_fixed_cents = source["paid_fee_fixed_cents"];
 	        this.due_date = source["due_date"];
 	        this.paid_at = this.convertValues(source["paid_at"], null);
 	        this.paid_amount_cents = source["paid_amount_cents"];

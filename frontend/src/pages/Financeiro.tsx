@@ -19,6 +19,9 @@ interface Invoice {
   amount_cents: number;
   status: string;
   payment_method_id?: number;
+  paid_method_name?: string;
+  paid_fee_percent?: number;
+  paid_fee_fixed_cents?: number;
   due_date: string;
   paid_at?: string;
   paid_amount_cents?: number;
@@ -60,8 +63,6 @@ interface PagamentoForm {
   metodoId: number;
 }
 
-const formasPreferidas = ["Dinheiro", "Pix", "Cartão de Crédito", "Cartão de Débito", "Transferência"];
-
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -85,6 +86,16 @@ function normalizar(texto: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+function formatarTaxaFatura(inv: Invoice): string {
+  if ((inv.paid_fee_percent ?? 0) > 0) {
+    return `${(inv.paid_fee_percent as number).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  }
+  if ((inv.paid_fee_fixed_cents ?? 0) > 0) {
+    return formatCents(inv.paid_fee_fixed_cents as number);
+  }
+  return "";
 }
 
 const statusLabels: Record<string, string> = {
@@ -143,13 +154,7 @@ function Financeiro({ user }: FinanceiroProps) {
     } catch (e) { setError(String(e)); }
   }
 
-  const formasDisponiveis = (() => {
-    const habilitadas = methods.filter((m) => m.enabled);
-    const preferidas = habilitadas
-      .filter((m) => formasPreferidas.includes(m.name))
-      .sort((a, b) => formasPreferidas.indexOf(a.name) - formasPreferidas.indexOf(b.name));
-    return preferidas.length > 0 ? preferidas : habilitadas;
-  })();
+  const formasDisponiveis = methods.filter((m) => m.enabled);
 
   function abrirPagamento(inv: Invoice) {
     if (!canManage) return;
@@ -412,6 +417,7 @@ function Financeiro({ user }: FinanceiroProps) {
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   Plano: <strong style={{ color: "var(--text-main)" }}>{inv.plan_name}</strong> · Pago: <strong style={{ color: "var(--success)" }}>{formatCents(inv.paid_amount_cents ?? inv.amount_cents)}</strong> · Data: {formatDate(inv.paid_at)}
                   {inv.payment_method_name && ` · Forma: ${inv.payment_method_name}`}
+                  {formatarTaxaFatura(inv) && ` · Taxa: ${formatarTaxaFatura(inv)}`}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
                   Confirmado por: {inv.confirmed_by || "—"}
@@ -541,13 +547,19 @@ function Financeiro({ user }: FinanceiroProps) {
               </select>
             </div>
 
+            {formasDisponiveis.length === 0 && (
+              <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 12 }}>
+                Nenhuma forma de pagamento ativa. Ative ou cadastre uma em "Pagamentos".
+              </div>
+            )}
+
             {erroPagamento && <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 12 }}>⚠️ {erroPagamento}</div>}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
               <button type="button" className="vmd-btn vmd-btn-secondary" onClick={() => setPagamento(null)} disabled={salvando}>
                 Cancelar
               </button>
-              <button type="submit" className="vmd-btn vmd-btn-success" disabled={salvando}>
+              <button type="submit" className="vmd-btn vmd-btn-success" disabled={salvando || formasDisponiveis.length === 0}>
                 {salvando ? "Confirmando..." : "Confirmar Pagamento"}
               </button>
             </div>

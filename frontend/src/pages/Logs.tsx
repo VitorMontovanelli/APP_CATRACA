@@ -37,6 +37,8 @@ const actionLabels: Record<string, string> = {
   ativou_plano: "Ativou plano",
   desativou_plano: "Desativou plano",
   criou_metodo_pagamento: "Criou método pagamento",
+  editou_metodo_pagamento: "Editou método pagamento",
+  deletou_metodo_pagamento: "Excluiu método pagamento",
   ativou_metodo_pagamento: "Ativou método pagamento",
   desativou_metodo_pagamento: "Desativou método pagamento",
   criou_plano_aluno: "Vinculou plano ao aluno",

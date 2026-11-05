@@ -63,9 +63,12 @@ func ensureTransferenciaMethod(db *gorm.DB) {
 	var count int64
 	db.Model(&models.PaymentMethod{}).Where("name = ?", "Transferência").Count(&count)
 	if count > 0 {
+		db.Model(&models.PaymentMethod{}).
+			Where("name = ? AND type <> ?", "Transferência", "transfer").
+			Update("type", "transfer")
 		return
 	}
-	db.Create(&models.PaymentMethod{Name: "Transferência", Type: "pix", FeePercent: 0, FeeFixedCents: 0, Enabled: true})
+	db.Create(&models.PaymentMethod{Name: "Transferência", Type: "transfer", FeePercent: 0, FeeFixedCents: 0, Enabled: true})
 }
 
 func seedPlans(db *gorm.DB) {

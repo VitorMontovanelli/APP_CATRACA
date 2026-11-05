@@ -20,7 +20,7 @@ type Plan struct {
 type PaymentMethod struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
 	Name          string    `gorm:"size:255;not null" json:"name"`
-	Type          string    `gorm:"size:20;not null;check:type IN ('pix','credit_card','boleto','debit_card','wallet','cash')" json:"type"`
+	Type          string    `gorm:"size:20;not null" json:"type"`
 	Enabled       bool      `gorm:"default:true" json:"enabled"`
 	FeePercent    float64   `gorm:"default:0" json:"fee_percent"`
 	FeeFixedCents int       `gorm:"default:0" json:"fee_fixed_cents"`
@@ -62,6 +62,9 @@ type Invoice struct {
 	AmountCents          int        `gorm:"not null" json:"amount_cents"`
 	Status               string     `gorm:"size:20;default:pending" json:"status"`
 	PaymentMethodID      *uint      `json:"payment_method_id"`
+	PaidMethodName       string     `gorm:"size:255" json:"paid_method_name"`
+	PaidFeePercent       float64    `gorm:"default:0" json:"paid_fee_percent"`
+	PaidFeeFixedCents    int        `gorm:"default:0" json:"paid_fee_fixed_cents"`
 	DueDate              string     `gorm:"size:10;not null" json:"due_date"`
 	PaidAt               *time.Time `json:"paid_at"`
 	PaidAmountCents      *int       `json:"paid_amount_cents"`

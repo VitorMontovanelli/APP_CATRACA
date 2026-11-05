@@ -3,6 +3,7 @@ package inbound
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"catraca-app/internal/models"
 	"gorm.io/gorm"
@@ -133,20 +134,76 @@ func (h *BillingPlansHandler) ListarPaymentMethods() ([]models.PaymentMethod, er
 	return list, err
 }
 
+var tiposPagamentoValidos = map[string]bool{
+	"cash":        true,
+	"pix":         true,
+	"credit_card": true,
+	"debit_card":  true,
+	"boleto":      true,
+	"transfer":    true,
+	"wallet":      true,
+	"other":       true,
+}
+
+func validarPaymentMethod(name, mtype string, feePercent float64, feeFixedCents int) (string, string, error) {
+	name = strings.TrimSpace(name)
+	mtype = strings.TrimSpace(strings.ToLower(mtype))
+	if name == "" {
+		return "", "", fmt.Errorf("informe o nome do método de pagamento")
+	}
+	if !tiposPagamentoValidos[mtype] {
+		return "", "", fmt.Errorf("tipo de pagamento inválido")
+	}
+	if feePercent < 0 || feeFixedCents < 0 {
+		return "", "", fmt.Errorf("a taxa não pode ser negativa")
+	}
+	if feePercent > 0 && feeFixedCents > 0 {
+		return "", "", fmt.Errorf("informe apenas uma taxa: percentual ou valor fixo")
+	}
+	return name, mtype, nil
+}
+
 func (h *BillingPlansHandler) CriarPaymentMethod(name, mtype string, feePercent float64, feeFixedCents int) (*models.PaymentMethod, error) {
-	if h.session.ActorCargo() != "super_admin" {
+	if !h.session.IsAdmin() {
 		return nil, fmt.Errorf("permissão negada")
+	}
+	name, mtype, err := validarPaymentMethod(name, mtype, feePercent, feeFixedCents)
+	if err != nil {
+		return nil, err
 	}
 	pm := models.PaymentMethod{Name: name, Type: mtype, FeePercent: feePercent, FeeFixedCents: feeFixedCents}
 	if err := h.db.Create(&pm).Error; err != nil {
 		return nil, err
 	}
-	h.session.RegistrarAudit("criou_metodo_pagamento", pm.ID)
+	h.session.RegistrarAuditComDetalhes("criou_metodo_pagamento", pm.ID, fmt.Sprintf("nome=%s, tipo=%s", pm.Name, pm.Type))
+	return &pm, nil
+}
+
+func (h *BillingPlansHandler) AtualizarPaymentMethod(id uint, name, mtype string, feePercent float64, feeFixedCents int) (*models.PaymentMethod, error) {
+	if !h.session.IsAdmin() {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	name, mtype, err := validarPaymentMethod(name, mtype, feePercent, feeFixedCents)
+	if err != nil {
+		return nil, err
+	}
+	var pm models.PaymentMethod
+	if err := h.db.First(&pm, id).Error; err != nil {
+		return nil, fmt.Errorf("método de pagamento não encontrado")
+	}
+	pm.Name = name
+	pm.Type = mtype
+	pm.FeePercent = feePercent
+	pm.FeeFixedCents = feeFixedCents
+	if err := h.db.Save(&pm).Error; err != nil {
+		return nil, err
+	}
+	h.session.RegistrarAuditComDetalhes("editou_metodo_pagamento", pm.ID, fmt.Sprintf("nome=%s, tipo=%s", pm.Name, pm.Type))
 	return &pm, nil
 }
 
 func (h *BillingPlansHandler) AtivarPaymentMethod(id uint, enabled bool) error {
-	if h.session.ActorCargo() != "super_admin" {
+	if !h.session.IsAdmin() {
 		return fmt.Errorf("permissão negada")
 	}
 	err := h.db.Model(&models.PaymentMethod{}).Where("id = ?", id).Update("enabled", enabled).Error
@@ -158,6 +215,34 @@ func (h *BillingPlansHandler) AtivarPaymentMethod(id uint, enabled bool) error {
 		h.session.RegistrarAudit(action, id)
 	}
 	return err
+}
+
+func (h *BillingPlansHandler) DeletarPaymentMethod(id uint) error {
+	if !h.session.IsAdmin() {
+		return fmt.Errorf("permissão negada")
+	}
+	var pm models.PaymentMethod
+	if err := h.db.First(&pm, id).Error; err != nil {
+		return fmt.Errorf("método de pagamento não encontrado")
+	}
+
+	var usos int64
+	h.db.Model(&models.Invoice{}).Where("payment_method_id = ?", id).Count(&usos)
+	if usos == 0 {
+		h.db.Model(&models.StudentPlan{}).Where("payment_method_id = ?", id).Count(&usos)
+	}
+	if usos == 0 {
+		h.db.Model(&models.Student{}).Where("forma_pagamento_id = ?", id).Count(&usos)
+	}
+	if usos > 0 {
+		return fmt.Errorf("este método já foi usado e não pode ser excluído; desative-o")
+	}
+
+	if err := h.db.Delete(&models.PaymentMethod{}, id).Error; err != nil {
+		return err
+	}
+	h.session.RegistrarAudit("deletou_metodo_pagamento", id)
+	return nil
 }
 
 func (h *BillingPlansHandler) ListarPaymentGateways() ([]models.PaymentGateway, error) {

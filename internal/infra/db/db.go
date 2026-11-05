@@ -23,6 +23,7 @@ func InitDB() *gorm.DB {
 	// A separação da capacidade por calendário precisa acontecer antes do
 	// AutoMigrate, para recriar a tabela com a chave composta correta.
 	MigrateCapacityCalendars(db)
+	MigratePaymentMethodTypes(db)
 	autoMigrateModels(db)
 	executeRawTableMigrations(db)
 	MigrateLegacyCapacityTable(db)
