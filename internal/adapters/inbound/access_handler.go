@@ -78,6 +78,9 @@ func (h *AccessHandler) processarAcesso(aluno *models.Aluno) (models.ResultadoAc
 }
 
 func (h *AccessHandler) ListarAccessLogs() ([]models.AccessLog, error) {
+	if h.session.ActorCargo() != "super_admin" {
+		return nil, fmt.Errorf("permissão negada")
+	}
 	logs := []models.AccessLog{}
 	err := h.db.Order("timestamp DESC").Limit(100).Find(&logs).Error
 	return logs, err

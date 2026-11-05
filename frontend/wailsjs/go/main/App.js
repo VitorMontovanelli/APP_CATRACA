@@ -122,8 +122,8 @@ export function CapturarSnapshotStream() {
   return window['go']['main']['App']['CapturarSnapshotStream']();
 }
 
-export function ConfirmarPagamento(arg1, arg2, arg3) {
-  return window['go']['main']['App']['ConfirmarPagamento'](arg1, arg2, arg3);
+export function ConfirmarPagamento(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ConfirmarPagamento'](arg1, arg2, arg3, arg4);
 }
 
 export function CriarInvoiceTeste() {
@@ -186,6 +186,10 @@ export function EnviarBackupTelegram() {
   return window['go']['main']['App']['EnviarBackupTelegram']();
 }
 
+export function EstornarPagamento(arg1) {
+  return window['go']['main']['App']['EstornarPagamento'](arg1);
+}
+
 export function GerarInvoice(arg1) {
   return window['go']['main']['App']['GerarInvoice'](arg1);
 }
@@ -242,12 +246,20 @@ export function ListarCobranca() {
   return window['go']['main']['App']['ListarCobranca']();
 }
 
+export function ListarHistoricoPagamentos() {
+  return window['go']['main']['App']['ListarHistoricoPagamentos']();
+}
+
 export function ListarInadimplentes() {
   return window['go']['main']['App']['ListarInadimplentes']();
 }
 
 export function ListarInvoices() {
   return window['go']['main']['App']['ListarInvoices']();
+}
+
+export function ListarInvoicesPendentes() {
+  return window['go']['main']['App']['ListarInvoicesPendentes']();
 }
 
 export function ListarPaymentGateways() {

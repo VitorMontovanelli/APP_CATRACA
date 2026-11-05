@@ -53,7 +53,19 @@ func seedSuperAdmin(db *gorm.DB) {
 func seedPaymentData(db *gorm.DB) {
 	seedPlans(db)
 	seedMethods(db)
+	ensureTransferenciaMethod(db)
 	seedGateways(db)
+}
+
+// ensureTransferenciaMethod garante a forma "Transferência" também em bancos
+// que já tinham formas de pagamento cadastradas antes desta opção existir.
+func ensureTransferenciaMethod(db *gorm.DB) {
+	var count int64
+	db.Model(&models.PaymentMethod{}).Where("name = ?", "Transferência").Count(&count)
+	if count > 0 {
+		return
+	}
+	db.Create(&models.PaymentMethod{Name: "Transferência", Type: "pix", FeePercent: 0, FeeFixedCents: 0, Enabled: true})
 }
 
 func seedPlans(db *gorm.DB) {

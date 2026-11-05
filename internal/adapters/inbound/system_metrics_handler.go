@@ -27,9 +27,20 @@ func (h *SystemMetricsHandler) ObterMetricasHome() (*models.MetricasHome, error)
 	h.db.Model(&models.User{}).Count(&stats.TotalUsuarios)
 	h.db.Model(&models.User{}).Where("cargo = ? OR cargo = ?", "super_admin", "admin").Count(&stats.TotalAdmins)
 	h.db.Model(&models.Student{}).Count(&stats.TotalAlunos)
-	h.db.Model(&models.Invoice{}).Where("status = ?", "paid").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalFaturadoCents)
-	h.db.Model(&models.Invoice{}).Where("status = ?", "overdue").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalAtrasoCents)
-	h.db.Model(&models.Invoice{}).Where("status = ?", "pending").Select("COALESCE(SUM(amount_cents), 0)").Scan(&stats.TotalPendenteCents)
+	// "Total pago" usa o valor efetivamente pago; faturas antigas sem valor
+	// pago registrado caem para o valor da própria fatura.
+	h.db.Model(&models.Invoice{}).
+		Where("status = ?", "paid").
+		Select("COALESCE(SUM(COALESCE(paid_amount_cents, amount_cents)), 0)").
+		Scan(&stats.TotalFaturadoCents)
+	h.db.Model(&models.Invoice{}).
+		Where("status IN ('pending', 'overdue') AND due_date < date('now')").
+		Select("COALESCE(SUM(amount_cents), 0)").
+		Scan(&stats.TotalAtrasoCents)
+	h.db.Model(&models.Invoice{}).
+		Where("status IN ('pending', 'overdue') AND due_date >= date('now')").
+		Select("COALESCE(SUM(amount_cents), 0)").
+		Scan(&stats.TotalPendenteCents)
 
 	type result struct {
 		Name string

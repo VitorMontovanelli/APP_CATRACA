@@ -85,6 +85,7 @@ export default function Usuarios({ user }: UsuariosProps) {
           <UsuarioCard
             key={u.id}
             item={u}
+            actorId={user.id}
             actorCargo={user.cargo}
             allowedCargos={allowedCargos}
             onReload={load}

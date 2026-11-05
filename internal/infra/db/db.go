@@ -31,6 +31,7 @@ func InitDB() *gorm.DB {
 
 	SeedData(db)
 	MigrateDefaultPlans(db)
+	MigratePendingInvoicePrices(db)
 	MigrateAdminPermissions(db)
 
 	return db

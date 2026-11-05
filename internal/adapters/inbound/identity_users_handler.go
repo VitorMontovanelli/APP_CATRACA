@@ -156,6 +156,9 @@ func (h *IdentityUsersHandler) MeuPerfil() (*models.User, error) {
 }
 
 func (h *IdentityUsersHandler) ListarAuditLogs() ([]models.AuditLog, error) {
+	if h.session.ActorCargo() != "super_admin" {
+		return nil, fmt.Errorf("permissão negada")
+	}
 	logs := []models.AuditLog{}
 	err := h.db.Order("timestamp DESC").Limit(200).Find(&logs).Error
 	return logs, err

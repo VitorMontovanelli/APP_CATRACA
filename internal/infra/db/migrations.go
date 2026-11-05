@@ -56,12 +56,27 @@ func MigrateAdminPermissions(db *gorm.DB) {
 		return
 	}
 	for _, u := range admins {
-		atualizadas := comPermissaoAgenda(u.Permissoes)
+		atualizadas := semPermissaoLogs(comPermissaoAgenda(u.Permissoes))
 		if atualizadas == u.Permissoes {
 			continue
 		}
 		db.Model(&models.User{}).Where("id = ?", u.ID).Update("permissoes", atualizadas)
 	}
+}
+
+// semPermissaoLogs remove o acesso aos logs de acesso do administrador
+// comum, que passou a ser exclusivo do super_admin.
+func semPermissaoLogs(permissoes string) string {
+	itens := strings.Split(permissoes, ",")
+	filtrados := make([]string, 0, len(itens))
+	for _, p := range itens {
+		p = strings.TrimSpace(p)
+		if p == "" || p == "logs" {
+			continue
+		}
+		filtrados = append(filtrados, p)
+	}
+	return strings.Join(filtrados, ",")
 }
 
 func comPermissaoAgenda(permissoes string) string {

@@ -62,7 +62,7 @@ export function CapturarFotoWebcam():Promise<string>;
 
 export function CapturarSnapshotStream():Promise<string>;
 
-export function ConfirmarPagamento(arg1:number,arg2:number,arg3:number):Promise<void>;
+export function ConfirmarPagamento(arg1:number,arg2:number,arg3:number,arg4:string):Promise<void>;
 
 export function CriarInvoiceTeste():Promise<void>;
 
@@ -94,6 +94,8 @@ export function DeletarUsuario(arg1:number):Promise<void>;
 
 export function EnviarBackupTelegram():Promise<string>;
 
+export function EstornarPagamento(arg1:number):Promise<void>;
+
 export function GerarInvoice(arg1:number):Promise<main.Invoice>;
 
 export function GerarProximaFatura(arg1:number):Promise<void>;
@@ -122,9 +124,13 @@ export function ListarCapacidadesMes(arg1:number,arg2:number):Promise<Array<main
 
 export function ListarCobranca():Promise<Array<main.CobrancaAluno>>;
 
+export function ListarHistoricoPagamentos():Promise<Array<main.Invoice>>;
+
 export function ListarInadimplentes():Promise<Array<main.InadimplenteReport>>;
 
 export function ListarInvoices():Promise<Array<main.Invoice>>;
+
+export function ListarInvoicesPendentes():Promise<Array<main.Invoice>>;
 
 export function ListarPaymentGateways():Promise<Array<main.PaymentGateway>>;
 

@@ -13,6 +13,7 @@ export interface UserItem {
 
 interface UsuarioCardProps {
   item: UserItem;
+  actorId: number;
   actorCargo: string;
   allowedCargos: string[];
   onReload: () => void;
@@ -24,6 +25,7 @@ interface UsuarioCardProps {
 
 export default function UsuarioCard({
   item,
+  actorId,
   actorCargo,
   allowedCargos,
   onReload,
@@ -39,6 +41,10 @@ export default function UsuarioCard({
   const [saving, setSaving] = useState(false);
 
   const isSuper = actorCargo === "super_admin";
+  const isSelf = item.id === actorId;
+  // Administrador comum só pode alterar a própria senha. Editar, desativar,
+  // excluir e promover usuários é exclusivo do super admin.
+  const podeAlterarSenha = isSuper || isSelf;
   const badgeClass = item.cargo === "super_admin" ? "vmd-badge vmd-badge-danger" : "vmd-badge vmd-badge-warning";
   const cargoLabel = item.cargo === "super_admin" ? "Super Admin" : "Administrador";
 
@@ -112,11 +118,13 @@ export default function UsuarioCard({
             🔑 Acessos
           </button>
         )}
-        {(isSuper || item.cargo !== "super_admin") && (
+        {(isSuper || item.cargo !== "super_admin") && podeAlterarSenha && (
+          <button className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => onOpenSenha(item)}>
+            🔒 Senha
+          </button>
+        )}
+        {isSuper && (
           <>
-            <button className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => onOpenSenha(item)}>
-              🔒 Senha
-            </button>
             <button className="vmd-btn vmd-btn-secondary" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => setEditing(true)}>
               Editar
             </button>
@@ -125,7 +133,7 @@ export default function UsuarioCard({
             </button>
           </>
         )}
-        {item.cargo !== "super_admin" && (
+        {isSuper && item.cargo !== "super_admin" && (
           <button className="vmd-btn vmd-btn-danger" style={{ padding: "6px 10px", fontSize: 12, background: "transparent" }} onClick={() => onDelete(item)}>
             Excluir
           </button>

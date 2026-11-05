@@ -35,10 +35,18 @@ func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoi
 		Status                string
 	}
 	var sp spMini
-	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents, sp.status
+	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents AS plan_price_cents, sp.status
 		FROM student_plans sp JOIN plans p ON p.id = sp.plan_id WHERE sp.id = ?`
 	if err := h.db.Raw(query, studentPlanID).Scan(&sp).Error; err != nil {
 		return nil, err
+	}
+	// Se o plano estiver sem preço cadastrado, usa o preço atual do plano
+	// diretamente como reforço (o alias acima já evita o valor zerado).
+	if sp.PlanPriceCents == 0 {
+		var preco int
+		if err := h.db.Raw("SELECT price_cents FROM plans WHERE id = ?", sp.PlanID).Scan(&preco).Error; err == nil && preco > 0 {
+			sp.PlanPriceCents = preco
+		}
 	}
 	if sp.Status != "active" {
 		return nil, fmt.Errorf("plano do aluno não está ativo")
@@ -69,6 +77,7 @@ func (h *BillingInvoicesHandler) BuscarInvoice(id uint) (*models.Invoice, error)
 	query := `SELECT i.id, i.student_plan_id, i.student_id, i.plan_id, i.amount_cents,
 		i.status, i.payment_method_id, i.due_date, i.paid_at, i.paid_amount_cents,
 		i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
+		COALESCE(i.confirmed_by, '') AS confirmed_by, i.refunded_by, i.refunded_at,
 		s.nome AS student_name, p.name AS plan_name, pm.name AS payment_method_name
 		FROM invoices i JOIN students s ON s.id = i.student_id JOIN plans p ON p.id = i.plan_id
 		LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id WHERE i.id = ?`
@@ -83,7 +92,7 @@ func (h *BillingInvoicesHandler) BuscarInvoice(id uint) (*models.Invoice, error)
 	return &raw.Invoice, nil
 }
 
-func (h *BillingInvoicesHandler) ListarInvoices() ([]models.Invoice, error) {
+func (h *BillingInvoicesHandler) listarInvoices(where string, args ...interface{}) ([]models.Invoice, error) {
 	type invRaw struct {
 		models.Invoice
 		StudentName       string
@@ -94,10 +103,12 @@ func (h *BillingInvoicesHandler) ListarInvoices() ([]models.Invoice, error) {
 	query := `SELECT i.id, i.student_plan_id, i.student_id, i.plan_id, i.amount_cents,
 		i.status, i.payment_method_id, i.due_date, i.paid_at, i.paid_amount_cents,
 		i.gateway_transaction_id, i.pix_qr_code, i.pix_br_code, i.notes, i.created_at,
+		COALESCE(i.confirmed_by, '') AS confirmed_by,
+		i.refunded_by, i.refunded_at,
 		s.nome AS student_name, p.name AS plan_name, COALESCE(pm.name, '') AS payment_method_name
 		FROM invoices i JOIN students s ON s.id = i.student_id JOIN plans p ON p.id = i.plan_id
-		LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id ORDER BY i.due_date DESC`
-	if err := h.db.Raw(query).Scan(&raw).Error; err != nil {
+		LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id WHERE ` + where
+	if err := h.db.Raw(query, args...).Scan(&raw).Error; err != nil {
 		return nil, err
 	}
 	list := make([]models.Invoice, len(raw))
@@ -110,20 +121,128 @@ func (h *BillingInvoicesHandler) ListarInvoices() ([]models.Invoice, error) {
 	return list, nil
 }
 
-func (h *BillingInvoicesHandler) ConfirmarPagamento(invoiceID uint, paymentMethodID uint, paidAmountCents int) error {
-	userName := h.session.ActorCargo()
-	err := h.db.Exec(
-		"UPDATE invoices SET status='paid', payment_method_id=?, paid_at=datetime('now'), paid_amount_cents=?, notes=COALESCE(notes||' | ','')||'Confirmado por '||? WHERE id=?",
-		paymentMethodID, paidAmountCents, userName, invoiceID,
-	).Error
-	if err == nil {
-		h.session.RegistrarAuditComDetalhes("confirmou_pagamento", invoiceID, fmt.Sprintf("valor=%d, metodo=%d", paidAmountCents, paymentMethodID))
-		h.recurring.GerarProximaFatura(invoiceID)
+func (h *BillingInvoicesHandler) ListarInvoices() ([]models.Invoice, error) {
+	return h.listarInvoices("1 = 1 ORDER BY i.due_date DESC, i.id DESC")
+}
+
+// ListarInvoicesPendentes devolve apenas as faturas em aberto (pendentes e
+// vencidas). Faturas pagas ficam exclusivamente no histórico.
+func (h *BillingInvoicesHandler) ListarInvoicesPendentes() ([]models.Invoice, error) {
+	return h.listarInvoices("i.status IN ('pending', 'overdue') ORDER BY i.due_date ASC, i.id ASC")
+}
+
+// ListarHistoricoPagamentos devolve as faturas pagas, da mais recente para a
+// mais antiga, com os dados de quem confirmou o pagamento.
+func (h *BillingInvoicesHandler) ListarHistoricoPagamentos() ([]models.Invoice, error) {
+	return h.listarInvoices("i.status = 'paid' ORDER BY i.paid_at DESC, i.id DESC")
+}
+
+func (h *BillingInvoicesHandler) actorName() string {
+	actorID := h.session.ActorID()
+	if actorID > 0 {
+		var name string
+		h.db.Model(&models.User{}).Where("id = ?", actorID).Pluck("name", &name)
+		if strings.TrimSpace(name) != "" {
+			return name
+		}
 	}
-	return err
+	if cargo := h.session.ActorCargo(); cargo != "" {
+		return cargo
+	}
+	return "Sistema"
+}
+
+func (h *BillingInvoicesHandler) ConfirmarPagamento(invoiceID uint, paymentMethodID uint, paidAmountCents int, paidDate string) error {
+	if !h.session.IsAdmin() {
+		return fmt.Errorf("permissão negada")
+	}
+	var inv models.Invoice
+	if err := h.db.First(&inv, invoiceID).Error; err != nil {
+		return fmt.Errorf("fatura não encontrada")
+	}
+	if inv.Status == "paid" {
+		return fmt.Errorf("esta fatura já está paga")
+	}
+	if inv.Status == "cancelled" {
+		return fmt.Errorf("fatura cancelada não pode ser confirmada como paga")
+	}
+	if paymentMethodID == 0 {
+		return fmt.Errorf("selecione a forma de pagamento")
+	}
+	if paidAmountCents < 0 {
+		return fmt.Errorf("o valor pago não pode ser negativo")
+	}
+
+	paidAt := time.Now()
+	if strings.TrimSpace(paidDate) != "" {
+		parsed, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(paidDate), time.Local)
+		if err != nil {
+			return fmt.Errorf("data do pagamento inválida")
+		}
+		paidAt = parsed
+	}
+
+	confirmedBy := h.actorName()
+	err := h.db.Model(&models.Invoice{}).Where("id = ?", invoiceID).Updates(map[string]interface{}{
+		"status":            "paid",
+		"payment_method_id": paymentMethodID,
+		"paid_at":           paidAt,
+		"paid_amount_cents": paidAmountCents,
+		"confirmed_by":      confirmedBy,
+		"refunded_by":       "",
+		"refunded_at":       nil,
+	}).Error
+	if err != nil {
+		return err
+	}
+	h.session.RegistrarAuditComDetalhes("confirmou_pagamento", invoiceID,
+		fmt.Sprintf("valor=%d, metodo=%d, data=%s, por=%s", paidAmountCents, paymentMethodID, paidAt.Format("2006-01-02"), confirmedBy))
+	h.recurring.GerarProximaFatura(invoiceID)
+	return nil
+}
+
+// EstornarPagamento devolve uma fatura paga para pendente, registrando quem
+// estornou e quando. A fatura sai do histórico e volta para "Faturas Emitidas".
+func (h *BillingInvoicesHandler) EstornarPagamento(invoiceID uint) error {
+	if !h.session.IsAdmin() {
+		return fmt.Errorf("permissão negada")
+	}
+	var inv models.Invoice
+	if err := h.db.First(&inv, invoiceID).Error; err != nil {
+		return fmt.Errorf("fatura não encontrada")
+	}
+	if inv.Status != "paid" {
+		return fmt.Errorf("somente faturas pagas podem ser estornadas")
+	}
+
+	now := time.Now()
+	refundedBy := h.actorName()
+	nota := fmt.Sprintf("Estornado por %s em %s", refundedBy, now.Format("02/01/2006 15:04"))
+	err := h.db.Model(&models.Invoice{}).Where("id = ?", invoiceID).Updates(map[string]interface{}{
+		"status":            "pending",
+		"paid_at":           nil,
+		"paid_amount_cents": nil,
+		"confirmed_by":      "",
+		"refunded_by":       refundedBy,
+		"refunded_at":       now,
+		"notes":             gorm.Expr("COALESCE(notes || ' | ', '') || ?", nota),
+	}).Error
+	if err != nil {
+		return err
+	}
+	h.session.RegistrarAuditComDetalhes("estornou_pagamento", invoiceID,
+		fmt.Sprintf("por=%s, em=%s", refundedBy, now.Format(time.RFC3339)))
+	return nil
 }
 
 func (h *BillingInvoicesHandler) CancelarInvoice(invoiceID uint) error {
+	var inv models.Invoice
+	if err := h.db.First(&inv, invoiceID).Error; err != nil {
+		return fmt.Errorf("fatura não encontrada")
+	}
+	if inv.Status == "paid" {
+		return fmt.Errorf("fatura paga não pode ser cancelada; use o estorno")
+	}
 	err := h.db.Model(&models.Invoice{}).Where("id = ?", invoiceID).Update("status", "cancelled").Error
 	if err == nil {
 		h.session.RegistrarAudit("cancelou_fatura", invoiceID)
@@ -135,9 +254,15 @@ func (h *BillingInvoicesHandler) DeletarInvoice(invoiceID uint) error {
 	if !h.session.IsAdmin() {
 		return fmt.Errorf("permissão negada")
 	}
-	n := h.db.Delete(&models.Invoice{}, invoiceID).RowsAffected
-	if n == 0 {
+	var inv models.Invoice
+	if err := h.db.First(&inv, invoiceID).Error; err != nil {
 		return fmt.Errorf("fatura não encontrada")
+	}
+	if inv.Status == "paid" {
+		return fmt.Errorf("fatura paga não pode ser excluída; use o estorno")
+	}
+	if err := h.db.Delete(&models.Invoice{}, invoiceID).Error; err != nil {
+		return err
 	}
 	h.session.RegistrarAudit("deletou_fatura", invoiceID)
 	return nil

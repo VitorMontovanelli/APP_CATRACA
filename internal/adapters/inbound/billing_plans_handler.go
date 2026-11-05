@@ -72,7 +72,13 @@ func (h *BillingPlansHandler) AtualizarPlano(id uint, name, description string, 
 	if err := h.db.Save(plan).Error; err != nil {
 		return nil, err
 	}
-	h.session.RegistrarAudit("editou_plano", id)
+	// Faturas em aberto passam a refletir o preço atual do plano. Faturas
+	// pagas, canceladas ou estornadas nunca são alteradas.
+	res := h.db.Model(&models.Invoice{}).
+		Where("plan_id = ? AND status IN ('pending', 'overdue')", id).
+		Update("amount_cents", priceCents)
+	h.session.RegistrarAuditComDetalhes("editou_plano", id,
+		fmt.Sprintf("faturas_em_aberto_atualizadas=%d", res.RowsAffected))
 	return h.BuscarPlano(id)
 }
 

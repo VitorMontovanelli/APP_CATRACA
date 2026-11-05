@@ -435,6 +435,10 @@ export namespace main {
 	    pix_qr_code?: string;
 	    pix_br_code?: string;
 	    comprovante?: string;
+	    confirmed_by: string;
+	    refunded_by: string;
+	    // Go type: time
+	    refunded_at?: any;
 	    notes?: string;
 	    // Go type: time
 	    created_at: any;
@@ -462,6 +466,9 @@ export namespace main {
 	        this.pix_qr_code = source["pix_qr_code"];
 	        this.pix_br_code = source["pix_br_code"];
 	        this.comprovante = source["comprovante"];
+	        this.confirmed_by = source["confirmed_by"];
+	        this.refunded_by = source["refunded_by"];
+	        this.refunded_at = this.convertValues(source["refunded_at"], null);
 	        this.notes = source["notes"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.student_name = source["student_name"];

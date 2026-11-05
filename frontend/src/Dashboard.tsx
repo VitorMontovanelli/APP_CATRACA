@@ -60,7 +60,7 @@ const navGroups: NavGroup[] = [
     title: "Sistema",
     items: [
       { page: "usuarios", label: "Usuários Administrativos", icon: "👥", minCargo: "admin" },
-      { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "admin" },
+      { page: "logs", label: "Logs de Acesso", icon: "📋", minCargo: "super_admin" },
       { page: "backup", label: "Backup Telegram", icon: "☁️", minCargo: "super_admin" },
     ],
   },
@@ -82,7 +82,7 @@ function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
       items: group.items.filter((item) => {
         if ((cargoLevel[item.minCargo] || 0) > userLevel) return false;
         if (user.cargo === "super_admin") return true;
-        const perms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
+        const perms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios"];
         return perms.includes(item.page);
       }),
     }))

@@ -69,6 +69,9 @@ type Invoice struct {
 	PixQrCode            *string    `gorm:"size:2000" json:"pix_qr_code"`
 	PixBrCode            *string    `gorm:"size:500" json:"pix_br_code"`
 	Comprovante          *string    `gorm:"size:500" json:"comprovante"`
+	ConfirmedBy          string     `gorm:"size:255" json:"confirmed_by"`
+	RefundedBy           string     `gorm:"size:255" json:"refunded_by"`
+	RefundedAt           *time.Time `json:"refunded_at"`
 	Notes                *string    `gorm:"size:1000" json:"notes"`
 	CreatedAt            time.Time  `json:"created_at"`
 	StudentName          string     `gorm:"-" json:"student_name"`
