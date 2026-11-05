@@ -20,6 +20,9 @@ func InitDB() *gorm.DB {
 	db.Exec("PRAGMA foreign_keys = ON")
 	db.Exec("PRAGMA journal_mode = WAL")
 
+	// A separação da capacidade por calendário precisa acontecer antes do
+	// AutoMigrate, para recriar a tabela com a chave composta correta.
+	MigrateCapacityCalendars(db)
 	autoMigrateModels(db)
 	executeRawTableMigrations(db)
 	MigrateLegacyCapacityTable(db)
@@ -57,7 +60,7 @@ func autoMigrateModels(db *gorm.DB) {
 }
 
 func executeRawTableMigrations(db *gorm.DB) {
-	db.Exec("CREATE TABLE IF NOT EXISTS capacidade_dias (data TEXT PRIMARY KEY, capacidade INTEGER NOT NULL)")
+	db.Exec("CREATE TABLE IF NOT EXISTS capacidade_dias (data TEXT NOT NULL, calendario TEXT NOT NULL DEFAULT 'pilates', capacidade INTEGER NOT NULL, PRIMARY KEY (data, calendario))")
 	db.Exec("CREATE TABLE IF NOT EXISTS agendamento_individuals (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, hora TEXT, student_id INTEGER, nome TEXT, pratica TEXT, observacao TEXT, created_at DATETIME)")
 	db.Exec("CREATE TABLE IF NOT EXISTS settings (`key` TEXT PRIMARY KEY, value TEXT)")
 }

@@ -3,11 +3,59 @@ package domain
 import (
 	"errors"
 	"time"
+
+	"catraca-app/internal/models"
 )
 
-const CapacidadeDiaPadrao = 48
+const (
+	// CapacidadeDiaPadrao é a capacidade padrão diária do calendário de Pilates.
+	CapacidadeDiaPadrao = 48
+	// CapacidadeIndividualPadrao é a capacidade padrão diária de cada
+	// calendário individual (também é o limite máximo de atendimentos).
+	CapacidadeIndividualPadrao = 10
+	// CalendarioPilates identifica o calendário principal.
+	CalendarioPilates = "pilates"
+)
 
-// HorariosAula é a lista única de horários do calendário de Pilates.
+// CalendariosIndividuais lista as chaves dos calendários de atendimento individual.
+var CalendariosIndividuais = []string{
+	models.PraticaVentosaterapia,
+	models.PraticaLiberacaoMiofascial,
+	models.PraticaPersonalTrainer,
+	models.PraticaKinesioTape,
+}
+
+// CalendarioValido informa se a chave corresponde a um calendário conhecido.
+func CalendarioValido(calendario string) bool {
+	if calendario == CalendarioPilates {
+		return true
+	}
+	for _, c := range CalendariosIndividuais {
+		if c == calendario {
+			return true
+		}
+	}
+	return false
+}
+
+// CapacidadePadraoDoCalendario retorna a capacidade diária padrão do calendário.
+func CapacidadePadraoDoCalendario(calendario string) int {
+	if calendario == CalendarioPilates {
+		return CapacidadeDiaPadrao
+	}
+	return CapacidadeIndividualPadrao
+}
+
+// CapacidadeMaximaDoCalendario retorna o limite de capacidade do calendário.
+// Zero significa sem limite máximo.
+func CapacidadeMaximaDoCalendario(calendario string) int {
+	if calendario == CalendarioPilates {
+		return 0
+	}
+	return CapacidadeIndividualPadrao
+}
+
+// HorariosAula é a lista única de horários dos calendários.
 var HorariosAula = []string{
 	"06:00", "07:00", "08:00", "09:00", "10:00",
 	"15:00", "16:00", "17:00", "18:00", "19:00",

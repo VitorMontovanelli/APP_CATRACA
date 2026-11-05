@@ -41,23 +41,11 @@ func turnoValido(turno string) bool {
 }
 
 func (h *ScheduleHandler) capacidadeDoDia(data string) int {
-	var cd models.CapacidadeDia
-	if err := h.db.Where("data = ?", data).First(&cd).Error; err != nil {
-		return domain.CapacidadeDiaPadrao
-	}
-	return cd.Capacidade
+	return capacidadeDoCalendario(h.db, domain.CalendarioPilates, data)
 }
 
 func (h *ScheduleHandler) ObterConfiguracaoAgenda() (*models.ConfigAgenda, error) {
-	if !h.session.IsAdmin() {
-		return nil, fmt.Errorf("permissão negada")
-	}
-	horarios := make([]string, len(domain.HorariosAula))
-	copy(horarios, domain.HorariosAula)
-	return &models.ConfigAgenda{
-		CapacidadePadrao: domain.CapacidadeDiaPadrao,
-		Horarios:         horarios,
-	}, nil
+	return h.ObterConfiguracaoAgendaCalendario(domain.CalendarioPilates)
 }
 
 func (h *ScheduleHandler) ListarAgendamentosMes(ano, mes int) ([]models.DiaAgenda, error) {
@@ -66,10 +54,10 @@ func (h *ScheduleHandler) ListarAgendamentosMes(ano, mes int) ([]models.DiaAgend
 	err := h.db.Raw(`
 		SELECT a.data, COUNT(a.id) AS total, COALESCE(c.capacidade, ?) AS capacidade
 		FROM agendamentos a
-		LEFT JOIN capacidade_dias c ON c.data = a.data
+		LEFT JOIN capacidade_dias c ON c.data = a.data AND c.calendario = ?
 		WHERE a.data LIKE ?
 		GROUP BY a.data, c.capacidade
-	`, domain.CapacidadeDiaPadrao, prefix+"%").Scan(&list).Error
+	`, domain.CapacidadeDiaPadrao, domain.CalendarioPilates, prefix+"%").Scan(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -80,43 +68,11 @@ func (h *ScheduleHandler) ListarAgendamentosMes(ano, mes int) ([]models.DiaAgend
 }
 
 func (h *ScheduleHandler) DefinirCapacidadeDia(data string, capacidade int) error {
-	if !h.session.IsAdmin() {
-		return fmt.Errorf("permissão negada")
-	}
-	if _, err := time.Parse("2006-01-02", data); err != nil {
-		return fmt.Errorf("data inválida: use o formato DD/MM/AAAA")
-	}
-	if domain.DiaIndisponivel(data) {
-		return fmt.Errorf("sábados e domingos estão indisponíveis")
-	}
-	if capacidade < 1 {
-		return fmt.Errorf("a capacidade deve ser de no mínimo 1 vaga")
-	}
-
-	var count int64
-	h.db.Model(&models.Agendamento{}).Where("data = ?", data).Count(&count)
-	if count > int64(capacidade) {
-		return fmt.Errorf("não foi possível aplicar: %d agendamento(s) já existem, acima da nova capacidade de %d", count, capacidade)
-	}
-
-	var cd models.CapacidadeDia
-	err := h.db.Where("data = ?", data).First(&cd).Error
-	if err == gorm.ErrRecordNotFound {
-		return h.db.Create(&models.CapacidadeDia{Data: data, Capacidade: capacidade}).Error
-	} else if err != nil {
-		return err
-	}
-	cd.Capacidade = capacidade
-	return h.db.Save(&cd).Error
+	return h.DefinirCapacidadeDiaCalendario(domain.CalendarioPilates, data, capacidade)
 }
 
 func (h *ScheduleHandler) ListarCapacidadesMes(ano, mes int) ([]models.CapacidadeDia, error) {
-	prefix := fmt.Sprintf("%04d-%02d", ano, mes)
-	list := []models.CapacidadeDia{}
-	if err := h.db.Where("data LIKE ?", prefix+"%").Find(&list).Error; err != nil {
-		return nil, err
-	}
-	return list, nil
+	return h.ListarCapacidadesCalendarioMes(domain.CalendarioPilates, ano, mes)
 }
 
 func (h *ScheduleHandler) ListarAgendamentosDia(data string) ([]models.Agendamento, error) {
@@ -225,14 +181,7 @@ func (h *ScheduleHandler) AtualizarHorarioAgendamento(id uint, hora string) (*mo
 }
 
 func (h *ScheduleHandler) garantirDiaComCapacidadePadrao(data string) error {
-	var count int64
-	if err := h.db.Model(&models.CapacidadeDia{}).Where("data = ?", data).Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	return h.db.Create(&models.CapacidadeDia{Data: data, Capacidade: domain.CapacidadeDiaPadrao}).Error
+	return garantirCapacidadeDiaCalendario(h.db, domain.CalendarioPilates, data, domain.CapacidadeDiaPadrao)
 }
 
 func (h *ScheduleHandler) resolverNomeAluno(alunoID uint, nome string) (string, error) {

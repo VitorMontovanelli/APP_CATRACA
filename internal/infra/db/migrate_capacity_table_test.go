@@ -33,7 +33,7 @@ func TestMigrateLegacyCapacityTableMoveValoresERemoveTabelaAntiga(t *testing.T) 
 	if err := database.Exec("CREATE TABLE capacidade_dia (data TEXT PRIMARY KEY, capacidade INTEGER NOT NULL)").Error; err != nil {
 		t.Fatalf("criar capacidade_dia: %v", err)
 	}
-	if err := database.Exec("CREATE TABLE capacidade_dias (data TEXT PRIMARY KEY, capacidade INTEGER NOT NULL)").Error; err != nil {
+	if err := database.Exec("CREATE TABLE capacidade_dias (data TEXT NOT NULL, calendario TEXT NOT NULL DEFAULT 'pilates', capacidade INTEGER NOT NULL, PRIMARY KEY (data, calendario))").Error; err != nil {
 		t.Fatalf("criar capacidade_dias: %v", err)
 	}
 	if err := database.Exec("INSERT INTO capacidade_dia (data, capacidade) VALUES ('2026-11-01', 10)").Error; err != nil {

@@ -158,6 +158,10 @@ export function DefinirCapacidadeDia(arg1, arg2) {
   return window['go']['main']['App']['DefinirCapacidadeDia'](arg1, arg2);
 }
 
+export function DefinirCapacidadeDiaCalendario(arg1, arg2, arg3) {
+  return window['go']['main']['App']['DefinirCapacidadeDiaCalendario'](arg1, arg2, arg3);
+}
+
 export function DefinirLimiteDiarioIndividual(arg1) {
   return window['go']['main']['App']['DefinirLimiteDiarioIndividual'](arg1);
 }
@@ -202,6 +206,10 @@ export function ListarAgendamentosDia(arg1) {
   return window['go']['main']['App']['ListarAgendamentosDia'](arg1);
 }
 
+export function ListarAgendamentosIndividuaisCalendarioMes(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListarAgendamentosIndividuaisCalendarioMes'](arg1, arg2, arg3);
+}
+
 export function ListarAgendamentosIndividuaisDia(arg1) {
   return window['go']['main']['App']['ListarAgendamentosIndividuaisDia'](arg1);
 }
@@ -220,6 +228,10 @@ export function ListarAlunosPorPlano(arg1, arg2, arg3) {
 
 export function ListarAuditLogs() {
   return window['go']['main']['App']['ListarAuditLogs']();
+}
+
+export function ListarCapacidadesCalendarioMes(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListarCapacidadesCalendarioMes'](arg1, arg2, arg3);
 }
 
 export function ListarCapacidadesMes(arg1, arg2) {
@@ -284,6 +296,10 @@ export function ObterConfigTelegram() {
 
 export function ObterConfiguracaoAgenda() {
   return window['go']['main']['App']['ObterConfiguracaoAgenda']();
+}
+
+export function ObterConfiguracaoAgendaCalendario(arg1) {
+  return window['go']['main']['App']['ObterConfiguracaoAgendaCalendario'](arg1);
 }
 
 export function ObterEstatisticasAcesso(arg1) {

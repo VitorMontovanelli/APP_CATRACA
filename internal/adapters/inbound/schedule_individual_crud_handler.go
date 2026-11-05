@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"catraca-app/internal/models"
+	"catraca-app/internal/scheduling/domain"
 	"gorm.io/gorm"
 )
 
@@ -43,7 +44,10 @@ func (h *ScheduleIndividualCrudHandler) AdicionarAgendamentoIndividual(data stri
 		return nil, err
 	}
 
-	if err := h.validarVagaIndividual(data, hora); err != nil {
+	if err := h.validarVagaIndividual(data, hora, pratica); err != nil {
+		return nil, err
+	}
+	if err := garantirCapacidadeDiaCalendario(h.db, pratica, data, domain.CapacidadeIndividualPadrao); err != nil {
 		return nil, err
 	}
 
@@ -74,16 +78,20 @@ func (h *ScheduleIndividualCrudHandler) resolverNomeIndividual(alunoID uint, nom
 	return nome, nil
 }
 
-func (h *ScheduleIndividualCrudHandler) validarVagaIndividual(data, hora string) error {
+func (h *ScheduleIndividualCrudHandler) validarVagaIndividual(data, hora, pratica string) error {
+	if domain.DiaIndisponivel(data) {
+		return fmt.Errorf("sábados e domingos estão indisponíveis para agendamento")
+	}
+
+	capacidade := capacidadeDoCalendario(h.db, pratica, data)
 	var count int64
-	h.db.Model(&models.AgendamentoIndividual{}).Where("data = ?", data).Count(&count)
-	limite := LimiteIndividualPadrao
-	if count >= int64(limite) {
-		return fmt.Errorf("limite diário de %d atendimentos atingido para este dia", limite)
+	h.db.Model(&models.AgendamentoIndividual{}).Where("data = ? AND pratica = ?", data, pratica).Count(&count)
+	if count >= int64(capacidade) {
+		return fmt.Errorf("capacidade máxima de %d atendimentos por dia atingida", capacidade)
 	}
 
 	var ocupado int64
-	h.db.Model(&models.AgendamentoIndividual{}).Where("data = ? AND hora = ?", data, hora).Count(&ocupado)
+	h.db.Model(&models.AgendamentoIndividual{}).Where("data = ? AND hora = ? AND pratica = ?", data, hora, pratica).Count(&ocupado)
 	if ocupado > 0 {
 		return fmt.Errorf("o horário %s já está ocupado neste dia", hora)
 	}
@@ -98,15 +106,18 @@ func (h *ScheduleIndividualCrudHandler) AtualizarAgendamentoIndividual(id uint, 
 	if err := h.db.First(&ag, id).Error; err != nil {
 		return nil, fmt.Errorf("atendimento não encontrado")
 	}
+	if domain.DiaIndisponivel(ag.Data) {
+		return nil, fmt.Errorf("sábados e domingos estão indisponíveis")
+	}
 	if !horarioIndividualValido(hora) {
 		return nil, fmt.Errorf("horário inválido: use um dos horários disponíveis da grade")
 	}
 	if !praticaValida(pratica) {
 		return nil, fmt.Errorf("prática inválida")
 	}
-	if hora != ag.Hora {
+	if hora != ag.Hora || pratica != ag.Pratica {
 		var ocupado int64
-		h.db.Model(&models.AgendamentoIndividual{}).Where("data = ? AND hora = ? AND id <> ?", ag.Data, hora, id).Count(&ocupado)
+		h.db.Model(&models.AgendamentoIndividual{}).Where("data = ? AND hora = ? AND pratica = ? AND id <> ?", ag.Data, hora, pratica, id).Count(&ocupado)
 		if ocupado > 0 {
 			return nil, fmt.Errorf("o horário %s já está ocupado neste dia", hora)
 		}

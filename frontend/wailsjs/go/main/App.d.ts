@@ -80,6 +80,8 @@ export function CriarUsuario(arg1:string,arg2:string,arg3:string,arg4:string,arg
 
 export function DefinirCapacidadeDia(arg1:string,arg2:number):Promise<void>;
 
+export function DefinirCapacidadeDiaCalendario(arg1:string,arg2:string,arg3:number):Promise<void>;
+
 export function DefinirLimiteDiarioIndividual(arg1:number):Promise<void>;
 
 export function DeletarDadosTeste():Promise<void>;
@@ -102,6 +104,8 @@ export function ListarAccessLogs():Promise<Array<main.AccessLog>>;
 
 export function ListarAgendamentosDia(arg1:string):Promise<Array<main.Agendamento>>;
 
+export function ListarAgendamentosIndividuaisCalendarioMes(arg1:string,arg2:number,arg3:number):Promise<Array<main.DiaIndividualAgenda>>;
+
 export function ListarAgendamentosIndividuaisDia(arg1:string):Promise<Array<main.AgendamentoIndividual>>;
 
 export function ListarAgendamentosIndividuaisMes(arg1:number,arg2:number):Promise<Array<main.DiaIndividualAgenda>>;
@@ -111,6 +115,8 @@ export function ListarAgendamentosMes(arg1:number,arg2:number):Promise<Array<mai
 export function ListarAlunosPorPlano(arg1:number,arg2:number,arg3:number):Promise<Array<main.AlunoPorPlano>>;
 
 export function ListarAuditLogs():Promise<Array<main.AuditLog>>;
+
+export function ListarCapacidadesCalendarioMes(arg1:string,arg2:number,arg3:number):Promise<Array<main.CapacidadeDia>>;
 
 export function ListarCapacidadesMes(arg1:number,arg2:number):Promise<Array<main.CapacidadeDia>>;
 
@@ -143,6 +149,8 @@ export function ObterConfigAgendaIndividual():Promise<main.ConfigAgendaIndividua
 export function ObterConfigTelegram():Promise<main.BackupConfig>;
 
 export function ObterConfiguracaoAgenda():Promise<main.ConfigAgenda>;
+
+export function ObterConfiguracaoAgendaCalendario(arg1:string):Promise<main.ConfigAgenda>;
 
 export function ObterEstatisticasAcesso(arg1:string):Promise<Array<main.AcessoEstatistica>>;
 

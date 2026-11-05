@@ -8,17 +8,12 @@ import (
 	"time"
 
 	"catraca-app/internal/models"
+	"catraca-app/internal/scheduling/domain"
 	"gorm.io/gorm"
 )
 
 const LimiteIndividualPadrao = 10
 const chaveLimiteIndividual = "agenda_individual_limite"
-
-var horariosIndividuais = []string{
-	"06:00", "07:00", "08:00", "09:00", "10:00",
-	"15:00", "16:00", "17:00", "18:00",
-	"19:00",
-}
 
 var praticasIndividuais = []string{
 	models.PraticaVentosaterapia,
@@ -28,12 +23,7 @@ var praticasIndividuais = []string{
 }
 
 func horarioIndividualValido(hora string) bool {
-	for _, h := range horariosIndividuais {
-		if h == hora {
-			return true
-		}
-	}
-	return false
+	return domain.HorarioAulaValido(hora)
 }
 
 func praticaValida(pratica string) bool {
@@ -113,25 +103,46 @@ func (h *ScheduleIndividualHandler) ListarAgendamentosIndividuaisMes(ano, mes in
 	}
 	prefix := fmt.Sprintf("%04d-%02d", ano, mes)
 	list := []models.DiaIndividualAgenda{}
-	limite := h.limiteIndividual()
 	err := h.db.Raw(`
-		SELECT COALESCE(i.data, c.data) AS data,
-		       COUNT(i.id) AS total,
-		       COALESCE(c.capacidade, ?) AS capacidade,
-		       COALESCE(GROUP_CONCAT(i.pratica), '') AS praticas
-		FROM agendamento_individuals i
-		LEFT JOIN capacidade_dias c ON c.data = i.data
-		WHERE COALESCE(i.data, c.data) LIKE ?
-		GROUP BY COALESCE(i.data, c.data)
-		UNION
-		SELECT c.data AS data, 0 AS total, c.capacidade AS capacidade, '' AS praticas
-		FROM capacidade_dias c
-		WHERE c.data LIKE ? AND c.data NOT IN (SELECT DISTINCT data FROM agendamento_individuals WHERE data LIKE ?)
-	`, limite, prefix+"%", prefix+"%", prefix+"%").Scan(&list).Error
+		SELECT data, COUNT(id) AS total, ? AS capacidade,
+		       GROUP_CONCAT(pratica) AS praticas
+		FROM agendamento_individuals
+		WHERE data LIKE ?
+		GROUP BY data
+	`, h.limiteIndividual(), prefix+"%").Scan(&list).Error
 	if err != nil {
 		return nil, err
 	}
 	h.preencherContagensPratica(prefix, list)
+	return list, nil
+}
+
+// ListarAgendamentosIndividuaisCalendarioMes lista a ocupação do mês apenas do
+// calendário (prática) informado, com a capacidade específica desse calendário.
+func (h *ScheduleIndividualHandler) ListarAgendamentosIndividuaisCalendarioMes(calendario string, ano, mes int) ([]models.DiaIndividualAgenda, error) {
+	if !h.session.IsAdmin() {
+		return nil, fmt.Errorf("permissão negada")
+	}
+	if !domain.CalendarioValido(calendario) || calendario == domain.CalendarioPilates {
+		return nil, fmt.Errorf("calendário individual inválido")
+	}
+	prefix := fmt.Sprintf("%04d-%02d", ano, mes)
+	list := []models.DiaIndividualAgenda{}
+	err := h.db.Raw(`
+		SELECT i.data AS data, COUNT(i.id) AS total,
+		       COALESCE(c.capacidade, ?) AS capacidade,
+		       GROUP_CONCAT(i.pratica) AS praticas
+		FROM agendamento_individuals i
+		LEFT JOIN capacidade_dias c ON c.data = i.data AND c.calendario = ?
+		WHERE i.data LIKE ? AND i.pratica = ?
+		GROUP BY i.data
+	`, domain.CapacidadeIndividualPadrao, calendario, prefix+"%", calendario).Scan(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []models.DiaIndividualAgenda{}
+	}
 	return list, nil
 }
 

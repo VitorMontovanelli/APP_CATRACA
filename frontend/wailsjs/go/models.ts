@@ -230,6 +230,7 @@ export namespace main {
 	}
 	export class CapacidadeDia {
 	    data: string;
+	    calendario: string;
 	    capacidade: number;
 	
 	    static createFrom(source: any = {}) {
@@ -239,6 +240,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.data = source["data"];
+	        this.calendario = source["calendario"];
 	        this.capacidade = source["capacidade"];
 	    }
 	}
@@ -312,7 +314,9 @@ export namespace main {
 	}
 	
 	export class ConfigAgenda {
+	    calendario: string;
 	    capacidade_padrao: number;
+	    capacidade_maxima: number;
 	    horarios: string[];
 	
 	    static createFrom(source: any = {}) {
@@ -321,7 +325,9 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.calendario = source["calendario"];
 	        this.capacidade_padrao = source["capacidade_padrao"];
+	        this.capacidade_maxima = source["capacidade_maxima"];
 	        this.horarios = source["horarios"];
 	    }
 	}

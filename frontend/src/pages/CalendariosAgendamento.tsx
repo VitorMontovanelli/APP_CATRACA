@@ -5,45 +5,26 @@ import {
   AtualizarAgendamentoIndividual,
   AtualizarHorarioAgendamento,
   DefinirCapacidadeDia,
+  DefinirCapacidadeDiaCalendario,
   ListarAgendamentosDia,
+  ListarAgendamentosIndividuaisCalendarioMes,
   ListarAgendamentosIndividuaisDia,
-  ListarAgendamentosIndividuaisMes,
   ListarAgendamentosMes,
+  ListarCapacidadesCalendarioMes,
   ListarCapacidadesMes,
   ListarStudents,
-  ObterConfigAgendaIndividual,
   ObterConfiguracaoAgenda,
+  ObterConfiguracaoAgendaCalendario,
   RemoverAgendamento,
   RemoverAgendamentoIndividual,
 } from "../../wailsjs/go/main/App";
 import "./Agenda.css";
 import "./AgendaIndividual.css";
 
-const CAPACIDADE_PADRAO = 10;
-
 const TURNOS = [
   { key: "manha", label: "Manhã", horario: "06:00 às 11:00" },
   { key: "tarde", label: "Tarde", horario: "15:00 às 19:00" },
   { key: "noite", label: "Noite", horario: "19:00 às 20:00" },
-];
-
-const HORARIOS_IND = [
-  { hora: "06:00", turno: "Manhã" },
-  { hora: "07:00", turno: "Manhã" },
-  { hora: "08:00", turno: "Manhã" },
-  { hora: "09:00", turno: "Manhã" },
-  { hora: "10:00", turno: "Manhã" },
-  { hora: "15:00", turno: "Tarde" },
-  { hora: "16:00", turno: "Tarde" },
-  { hora: "17:00", turno: "Tarde" },
-  { hora: "18:00", turno: "Tarde" },
-  { hora: "19:00", turno: "Noite" },
-];
-
-const TURNOS_IND = [
-  { key: "Manhã", label: "Manhã", horario: "06:00 às 11:00" },
-  { key: "Tarde", label: "Tarde", horario: "15:00 às 19:00" },
-  { key: "Noite", label: "Noite", horario: "19:00 às 20:00" },
 ];
 
 const MENU_ITEMS = [
@@ -146,16 +127,6 @@ function ocupacaoLabel(total: number, capacidade: number): { label: string; colo
   return { label: "Lotado", color: "#f87171", bg: "rgba(239,68,68,0.18)" };
 }
 
-function parseContagens(s: string): Record<string, number> {
-  const map: Record<string, number> = {};
-  if (!s) return map;
-  for (const part of s.split(",")) {
-    const [pratica, qtd] = part.split(":");
-    if (pratica) map[pratica] = Number(qtd) || 0;
-  }
-  return map;
-}
-
 function makeDias(ano: number, mes: number): (string | null)[] {
   const firstDay = new Date(ano, mes, 1).getDay();
   const daysInMonth = new Date(ano, mes + 1, 0).getDate();
@@ -187,8 +158,8 @@ function CalendarioPilates({
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loadingDia, setLoadingDia] = useState(false);
 
-  const [capacidadeDia, setCapacidadeDia] = useState(0);
-  const [capacidadePadrao, setCapacidadePadrao] = useState(0);
+  const [capacidadeDia, setCapacidadeDia] = useState(48);
+  const [capacidadePadrao, setCapacidadePadrao] = useState(48);
   const [horariosAula, setHorariosAula] = useState<string[]>([]);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [editCapacidade, setEditCapacidade] = useState(false);
@@ -597,17 +568,20 @@ function CalendarioPratica({
   const [atendimentos, setAtendimentos] = useState<AgendamentoIndividual[]>([]);
   const [loadingDia, setLoadingDia] = useState(false);
 
-  const [limite, setLimite] = useState(CAPACIDADE_PADRAO);
+  const [capacidadePadrao, setCapacidadePadrao] = useState(10);
+  const [capacidadeMaxima, setCapacidadeMaxima] = useState(10);
+  const [horarios, setHorarios] = useState<string[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
-  const [capacidadeDia, setCapacidadeDia] = useState(CAPACIDADE_PADRAO);
+  const [capacidadeDia, setCapacidadeDia] = useState(10);
   const [editCapacidade, setEditCapacidade] = useState(false);
-  const [novaCapacidade, setNovaCapacidade] = useState(String(CAPACIDADE_PADRAO));
+  const [novaCapacidade, setNovaCapacidade] = useState("10");
   const [savingCapacidade, setSavingCapacidade] = useState(false);
 
   const [modoEdicao, setModoEdicao] = useState<number | null>(null);
   const [alunoId, setAlunoId] = useState(0);
   const [novoNome, setNovoNome] = useState("");
-  const [hora, setHora] = useState("06:00");
+  const [hora, setHora] = useState("");
   const [observacao, setObservacao] = useState("");
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -615,23 +589,34 @@ function CalendarioPratica({
   const loadMes = useCallback(async (a: number, m: number) => {
     setLoadingMes(true);
     try {
-      const list = await ListarAgendamentosIndividuaisMes(a, m + 1) as unknown as { data: string; total: number; capacidade: number; praticas: string; contagens: string }[];
+      const [list, caps] = await Promise.all([
+        ListarAgendamentosIndividuaisCalendarioMes(praticaKey, a, m + 1) as unknown as Promise<{ data: string; total: number; capacidade: number; praticas: string }[]>,
+        ListarCapacidadesCalendarioMes(praticaKey, a, m + 1) as unknown as Promise<{ data: string; capacidade: number }[]>,
+      ]);
       const map: Record<string, { total: number; capacidade: number; praticas: string; contagens: string }> = {};
-      for (const d of list) map[d.data] = { total: d.total, capacidade: d.capacidade, praticas: d.praticas || "", contagens: d.contagens || "" };
+      for (const d of caps) map[d.data] = { total: 0, capacidade: d.capacidade, praticas: "", contagens: "" };
+      for (const d of list) map[d.data] = { total: d.total, capacidade: d.capacidade, praticas: d.praticas || "", contagens: "" };
       setOcupacao(map);
     } catch (e) {
       setError(String(e));
     } finally {
       setLoadingMes(false);
     }
-  }, []);
+  }, [praticaKey]);
 
   const loadConfig = useCallback(async () => {
     try {
-      const cfg = await ObterConfigAgendaIndividual() as unknown as { limite_diario: number };
-      setLimite(cfg.limite_diario);
-    } catch { /* keep default */ }
-  }, []);
+      const cfg = await ObterConfiguracaoAgendaCalendario(praticaKey) as unknown as { capacidade_padrao: number; capacidade_maxima: number; horarios: string[] };
+      setCapacidadePadrao(cfg.capacidade_padrao);
+      setCapacidadeMaxima(cfg.capacidade_maxima);
+      setHorarios(cfg.horarios || []);
+      setHora((atual) => atual || (cfg.horarios?.[0] ?? ""));
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setConfigLoaded(true);
+    }
+  }, [praticaKey]);
 
   useEffect(() => { loadMes(ano, mes); }, [ano, mes, loadMes]);
   useEffect(() => { loadConfig(); }, [loadConfig]);
@@ -654,35 +639,39 @@ function CalendarioPratica({
     setMes(d.getMonth());
   }
 
+  function resetForm() {
+    setModoEdicao(null);
+    setAlunoId(0);
+    setNovoNome("");
+    setHora(horarios[0] ?? "");
+    setObservacao("");
+  }
+
   function abrirDia(data: string) {
     setSelectedDay(data);
     setError("");
     setFeedback(null);
     resetForm();
-    const cap = ocupacao[data]?.capacidade ?? limite;
+    const cap = ocupacao[data]?.capacidade ?? capacidadePadrao;
     setCapacidadeDia(cap);
     setNovaCapacidade(String(cap));
     setEditCapacidade(false);
     loadDia(data);
-    if (students.length === 0) loadStudents();
-  }
-
-  function resetForm() {
-    setModoEdicao(null);
-    setAlunoId(0);
-    setNovoNome("");
-    setHora("06:00");
-    setObservacao("");
+    if (!isWeekend(data) && students.length === 0) loadStudents();
   }
 
   async function handleSalvarCapacidade() {
-    if (!selectedDay) return;
+    if (!selectedDay || isWeekend(selectedDay)) return;
     const cap = Number(novaCapacidade);
-    if (Number.isNaN(cap) || cap < 1 || cap > CAPACIDADE_PADRAO) { setError("Capacidade inválida"); return; }
+    const invalida = Number.isNaN(cap) || cap < 1 || (capacidadeMaxima > 0 && cap > capacidadeMaxima);
+    if (invalida) {
+      setError(capacidadeMaxima > 0 ? `A capacidade deve estar entre 1 e ${capacidadeMaxima} vagas` : "Capacidade inválida");
+      return;
+    }
     setSavingCapacidade(true);
     setError("");
     try {
-      await DefinirCapacidadeDia(selectedDay, cap);
+      await DefinirCapacidadeDiaCalendario(praticaKey, selectedDay, cap);
       setCapacidadeDia(cap);
       setEditCapacidade(false);
       setFeedback({ type: "success", msg: `Capacidade atualizada para ${cap} vagas.` });
@@ -696,8 +685,8 @@ function CalendarioPratica({
 
   const horasDisponiveis = useMemo(() => {
     const ocupadas = new Set(atendimentos.map((a) => a.hora));
-    return HORARIOS_IND.filter((h) => !ocupadas.has(h.hora) || (modoEdicao !== null && h.hora === atendimentos.find((a) => a.id === modoEdicao)?.hora));
-  }, [atendimentos, modoEdicao]);
+    return horarios.filter((h) => !ocupadas.has(h) || (modoEdicao !== null && h === atendimentos.find((a) => a.id === modoEdicao)?.hora));
+  }, [atendimentos, modoEdicao, horarios]);
 
   const totalDia = selectedDay ? atendimentos.length : 0;
   const lotado = totalDia >= capacidadeDia;
@@ -713,7 +702,7 @@ function CalendarioPratica({
   }
 
   async function handleSalvar() {
-    if (!selectedDay) return;
+    if (!selectedDay || isWeekend(selectedDay)) return;
     setError("");
     setFeedback(null);
 
@@ -750,6 +739,13 @@ function CalendarioPratica({
 
   const dias = useMemo(() => makeDias(ano, mes), [ano, mes]);
   const vagas = ocupacaoLabel(totalDia, capacidadeDia);
+  const fimDeSemanaSelecionado = selectedDay ? isWeekend(selectedDay) : false;
+  const agendamentosFimSemana = useMemo(
+    () => Object.keys(ocupacao)
+      .filter((d) => isWeekend(d) && (ocupacao[d]?.total ?? 0) > 0)
+      .sort(),
+    [ocupacao],
+  );
 
   return (
     <div>
@@ -760,6 +756,14 @@ function CalendarioPratica({
 
       {error && <div className="vmd-alert vmd-alert-danger"><span>⚠️ {error}</span></div>}
       {feedback && <div className={`vmd-alert ${feedback.type === "success" ? "vmd-alert-success" : "vmd-alert-danger"}`}><span>✨ {feedback.msg}</span></div>}
+      {agendamentosFimSemana.length > 0 && (
+        <div className="vmd-alert vmd-alert-danger">
+          <span>
+            ⚠️ Sábados e domingos estão indisponíveis. Há atendimento(s) em {agendamentosFimSemana.map(formatBR).join(", ")}.
+            Eles podem ser consultados e removidos, mas não é possível incluir alunos nem alterar horários nesses dias.
+          </span>
+        </div>
+      )}
 
       <div className="vmd-card">
         <div className="agenda-header">
@@ -779,8 +783,25 @@ function CalendarioPratica({
         <div className="agenda-grid">
           {dias.map((data, idx) => {
             if (data === null) return <div key={`v-${idx}`} className="agenda-vazio" />;
-            const dia = ocupacao[data] || { total: 0, capacidade: limite, praticas: "", contagens: "" };
-            const thisCount = parseContagens(dia.contagens)[praticaKey] || 0;
+            const totalCalendario = ocupacao[data]?.total ?? 0;
+
+            if (isWeekend(data)) {
+              return (
+                <button
+                  key={data}
+                  className={`agenda-day agenda-day-indisponivel ${data === selectedDay ? "selecionado" : ""}`}
+                  onClick={() => abrirDia(data)}
+                  disabled={totalCalendario === 0}
+                  title={totalCalendario > 0 ? `${totalCalendario} atendimento(s) em dia indisponível` : "Sábados e domingos indisponíveis"}
+                >
+                  <span className="agenda-day-num">{Number(data.split("-")[2])}</span>
+                  <span className="agenda-day-count">Indisponível</span>
+                </button>
+              );
+            }
+
+            const dia = ocupacao[data] || { total: 0, capacidade: capacidadePadrao, praticas: "", contagens: "" };
+            const thisCount = dia.total;
             const oClass = ocupacaoClass(thisCount, dia.capacidade);
             return (
               <button
@@ -789,7 +810,9 @@ function CalendarioPratica({
                 onClick={() => abrirDia(data)}
               >
                 <span className="agenda-day-num">{Number(data.split("-")[2])}</span>
-                <span className="agenda-day-count">{thisCount}/{dia.capacidade} vagas</span>
+                <span className="agenda-day-count">
+                  {configLoaded ? `${thisCount}/${dia.capacidade} vagas` : "Carregando..."}
+                </span>
               </button>
             );
           })}
@@ -810,30 +833,45 @@ function CalendarioPratica({
             </div>
 
             <div className="vmd-modal-body">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <span className="agenda-vagas-pill" style={{ color: vagas.color, background: vagas.bg }}>
-                  {totalDia}/{capacidadeDia} vagas — {vagas.label}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
-                  {loadingDia ? "Carregando..." : `${atendimentos.length} atendimento(s)`}
-                </span>
-              </div>
+              {fimDeSemanaSelecionado ? (
+                <>
+                  <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 16 }}>
+                    ⚠️ Sábados e domingos estão indisponíveis. Não é possível incluir alunos nem alterar horários.
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                      {loadingDia ? "Carregando..." : `${atendimentos.length} atendimento(s)`}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <span className="agenda-vagas-pill" style={{ color: vagas.color, background: vagas.bg }}>
+                      {totalDia}/{capacidadeDia} vagas — {vagas.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                      {loadingDia ? "Carregando..." : `${atendimentos.length} atendimento(s)`}
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "10px 12px", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", background: "rgba(255,255,255,0.02)" }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>Capacidade:</span>
-                {editCapacidade ? (
-                  <>
-                    <input type="number" min={1} max={CAPACIDADE_PADRAO} value={novaCapacidade} onChange={(e) => setNovaCapacidade(e.target.value)} className="vmd-input" style={{ width: 90, padding: "6px 10px", fontSize: 13 }} />
-                    <button onClick={handleSalvarCapacidade} disabled={savingCapacidade} className="vmd-btn vmd-btn-primary" style={{ padding: "6px 12px", fontSize: 12 }}>{savingCapacidade ? "Salvando..." : "Salvar"}</button>
-                    <button onClick={() => { setEditCapacidade(false); setNovaCapacidade(String(capacidadeDia)); }} className="vmd-btn vmd-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>Cancelar</button>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: vagas.color }}>{capacidadeDia} vagas/dia</span>
-                    <button onClick={() => { setEditCapacidade(true); setNovaCapacidade(String(capacidadeDia)); }} className="vmd-btn vmd-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>✏️ Editar</button>
-                  </>
-                )}
-              </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "10px 12px", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", background: "rgba(255,255,255,0.02)" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>Capacidade:</span>
+                    {editCapacidade ? (
+                      <>
+                        <input type="number" min={1} max={capacidadeMaxima > 0 ? capacidadeMaxima : undefined} value={novaCapacidade} onChange={(e) => setNovaCapacidade(e.target.value)} className="vmd-input" style={{ width: 90, padding: "6px 10px", fontSize: 13 }} />
+                        <button onClick={handleSalvarCapacidade} disabled={savingCapacidade} className="vmd-btn vmd-btn-primary" style={{ padding: "6px 12px", fontSize: 12 }}>{savingCapacidade ? "Salvando..." : "Salvar"}</button>
+                        <button onClick={() => { setEditCapacidade(false); setNovaCapacidade(String(capacidadeDia)); }} className="vmd-btn vmd-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>Cancelar</button>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: vagas.color }}>{capacidadeDia} vagas/dia</span>
+                        <button onClick={() => { setEditCapacidade(true); setNovaCapacidade(String(capacidadeDia)); }} className="vmd-btn vmd-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>✏️ Editar</button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
 
               {atendimentos.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-dim)", fontSize: 13 }}>Nenhum atendimento neste dia.</div>
@@ -846,70 +884,60 @@ function CalendarioPratica({
                         <div className="agenda-item-sub">{ag.student_id ? "Aluno cadastrado" : "Novo aluno"}{ag.observacao ? ` · ${ag.observacao}` : ""}</div>
                       </div>
                       <span className="agenda-turno-badge">{ag.hora}</span>
-                      <button onClick={() => iniciarEdicao(ag)} className="vmd-btn vmd-btn-ghost" style={{ padding: "5px 10px", fontSize: 11 }}>✏️</button>
+                      {!fimDeSemanaSelecionado && (
+                        <button onClick={() => iniciarEdicao(ag)} className="vmd-btn vmd-btn-ghost" style={{ padding: "5px 10px", fontSize: 11 }}>✏️</button>
+                      )}
                       <button onClick={() => handleRemover(ag.id, ag.nome)} className="vmd-btn vmd-btn-danger" style={{ padding: "5px 10px", fontSize: 11 }}>Remover</button>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div style={{ borderTop: "1px solid var(--border-color)", margin: "18px 0 14px", paddingTop: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)", marginBottom: 12 }}>
-                  {modoEdicao ? "Editar atendimento" : lotado ? "Limite atingido" : "Novo atendimento"}
-                </div>
-                {lotado && modoEdicao === null ? (
-                  <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 0 }}>⚠️ Capacidade máxima de {capacidadeDia} vagas atingida para este dia.</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <div>
-                      <label className="vmd-label">Aluno</label>
-                      <select value={alunoId} onChange={(e) => setAlunoId(Number(e.target.value))} className="vmd-select" disabled={modoEdicao !== null}>
-                        <option value={0}>— Escolha um aluno —</option>
-                        {students.filter((s) => s.ativo).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                      </select>
-                      {alunoId === 0 && (
-                        <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ou digite o nome do aluno" className="vmd-input" style={{ marginTop: 8 }} disabled={modoEdicao !== null} />
-                      )}
-                    </div>
-                    <div>
-                      <label className="vmd-label">Horário</label>
-                      <div className="agi-grade-horarios">
-                        {TURNOS_IND.map((t) => {
-                          const horasTurno = HORARIOS_IND.filter((h) => h.turno === t.key);
-                          const temHoras = horasTurno.some((h) => horasDisponiveis.some((hd) => hd.hora === h.hora));
-                          if (!temHoras && modoEdicao === null) return null;
-                          return (
-                            <div key={t.key}>
-                              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text-dim)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                {t.label} <span style={{ opacity: 0.7, textTransform: "none", letterSpacing: 0 }}>{t.horario}</span>
-                              </div>
-                              <div className="agi-grade-linha">
-                                {horasTurno.map((h) => {
-                                  const disp = horasDisponiveis.some((hd) => hd.hora === h.hora);
-                                  return (
-                                    <button key={h.hora} className={`agi-seg-btn ${hora === h.hora ? "ativo" : ""}`} disabled={!disp} onClick={() => setHora(h.hora)}>
-                                      {h.hora}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
+              {!fimDeSemanaSelecionado && (
+                <div style={{ borderTop: "1px solid var(--border-color)", margin: "18px 0 14px", paddingTop: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)", marginBottom: 12 }}>
+                    {modoEdicao ? "Editar atendimento" : lotado ? "Limite atingido" : "Novo atendimento"}
+                  </div>
+                  {lotado && modoEdicao === null ? (
+                    <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 0 }}>⚠️ Capacidade máxima de {capacidadeDia} vagas atingida para este dia.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div>
+                        <label className="vmd-label">Aluno</label>
+                        <select value={alunoId} onChange={(e) => setAlunoId(Number(e.target.value))} className="vmd-select" disabled={modoEdicao !== null}>
+                          <option value={0}>— Escolha um aluno —</option>
+                          {students.filter((s) => s.ativo).map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                        </select>
+                        {alunoId === 0 && (
+                          <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ou digite o nome do aluno" className="vmd-input" style={{ marginTop: 8 }} disabled={modoEdicao !== null} />
+                        )}
+                      </div>
+                      <div>
+                        <label className="vmd-label">Horário</label>
+                        <div className="agi-grade-linha" style={{ flexWrap: "wrap" }}>
+                          {horarios.map((h) => {
+                            const disp = horasDisponiveis.includes(h);
+                            return (
+                              <button key={h} className={`agi-seg-btn ${hora === h ? "ativo" : ""}`} disabled={!disp} onClick={() => setHora(h)}>
+                                {h}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="vmd-label">Observação (opcional)</label>
+                        <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: Foco em glúteos" className="vmd-input" />
                       </div>
                     </div>
-                    <div>
-                      <label className="vmd-label">Observação (opcional)</label>
-                      <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: Foco em glúteos" className="vmd-input" />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="vmd-modal-footer">
               <button onClick={() => { setSelectedDay(null); resetForm(); }} className="vmd-btn vmd-btn-secondary">Fechar</button>
-              {(modoEdicao !== null || !lotado) && (
+              {!fimDeSemanaSelecionado && (modoEdicao !== null || !lotado) && (
                 <button onClick={handleSalvar} className="vmd-btn vmd-btn-primary">
                   {modoEdicao ? "💾 Salvar alterações" : "➕ Agendar atendimento"}
                 </button>

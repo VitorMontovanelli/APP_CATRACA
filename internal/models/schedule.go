@@ -24,6 +24,7 @@ type DiaAgenda struct {
 
 type CapacidadeDia struct {
 	Data       string `gorm:"primaryKey;size:10" json:"data"`
+	Calendario string `gorm:"primaryKey;size:30;not null;default:pilates" json:"calendario"`
 	Capacidade int    `gorm:"not null" json:"capacidade"`
 }
 
@@ -35,7 +36,9 @@ func (CapacidadeDia) TableName() string {
 }
 
 type ConfigAgenda struct {
+	Calendario       string   `json:"calendario"`
 	CapacidadePadrao int      `json:"capacidade_padrao"`
+	CapacidadeMaxima int      `json:"capacidade_maxima"`
 	Horarios         []string `json:"horarios"`
 }
 

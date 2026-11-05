@@ -40,8 +40,8 @@ func MigrateLegacyCapacityTable(db *gorm.DB) {
 	}
 	log.Printf("Backup do banco gerado em %s antes de migrar %d capacidade(s) de capacidade_dia", backup, total)
 
-	if err := db.Exec(`INSERT OR IGNORE INTO capacidade_dias (data, capacidade)
-		SELECT data, capacidade FROM capacidade_dia WHERE data IS NOT NULL`).Error; err != nil {
+	if err := db.Exec(`INSERT OR IGNORE INTO capacidade_dias (data, calendario, capacidade)
+		SELECT data, 'pilates', capacidade FROM capacidade_dia WHERE data IS NOT NULL`).Error; err != nil {
 		log.Printf("Aviso: falha ao migrar capacidade_dia para capacidade_dias: %v", err)
 		return
 	}
