@@ -23,21 +23,6 @@ interface MetodosPagamentoProps {
 
 type FeeMode = "none" | "percent" | "fixed";
 
-const typeOptions = [
-  { value: "cash", label: "Dinheiro" },
-  { value: "pix", label: "Pix" },
-  { value: "credit_card", label: "Cartão de Crédito" },
-  { value: "debit_card", label: "Cartão de Débito" },
-  { value: "boleto", label: "Boleto" },
-  { value: "transfer", label: "Transferência" },
-  { value: "wallet", label: "Carteira Digital" },
-  { value: "other", label: "Outro" },
-];
-
-const typeLabels: Record<string, string> = Object.fromEntries(
-  typeOptions.map((t) => [t.value, t.label])
-);
-
 const methodIcons: Record<string, string> = {
   cash: "💵",
   pix: "⚡",
@@ -65,7 +50,7 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PaymentMethod | null>(null);
   const [name, setName] = useState("");
-  const [mtype, setMtype] = useState("pix");
+  const [mtype, setMtype] = useState("other");
   const [feeMode, setFeeMode] = useState<FeeMode>("none");
   const [feeValue, setFeeValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -85,7 +70,7 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
   function abrirNovo() {
     setEditing(null);
     setName("");
-    setMtype("pix");
+    setMtype("other");
     setFeeMode("none");
     setFeeValue("");
     setError("");
@@ -223,8 +208,7 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
                     </span>
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                    Tipo: {typeLabels[m.type] || m.type}
-                    {fee ? ` · taxa: ${fee}` : " · sem taxa"}
+                    {fee ? `Taxa: ${fee}` : "Sem taxa"}
                   </div>
                 </div>
               </div>
@@ -298,20 +282,6 @@ function MetodosPagamento({ user }: MetodosPagamentoProps) {
                     required
                     className="vmd-input"
                   />
-                </div>
-
-                <div className="vmd-form-group" style={{ marginBottom: 0 }}>
-                  <label className="vmd-label">Tipo *</label>
-                  <select
-                    value={mtype}
-                    onChange={(e) => setMtype(e.target.value)}
-                    required
-                    className="vmd-select"
-                  >
-                    {typeOptions.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div className="vmd-form-group" style={{ marginBottom: 0 }}>
