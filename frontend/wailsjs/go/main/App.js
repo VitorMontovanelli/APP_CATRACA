@@ -58,12 +58,12 @@ export function AtualizarConfigGateway(arg1, arg2) {
   return window['go']['main']['App']['AtualizarConfigGateway'](arg1, arg2);
 }
 
-export function AtualizarPaymentMethod(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['main']['App']['AtualizarPaymentMethod'](arg1, arg2, arg3, arg4, arg5);
-}
-
 export function AtualizarHorarioAgendamento(arg1, arg2) {
   return window['go']['main']['App']['AtualizarHorarioAgendamento'](arg1, arg2);
+}
+
+export function AtualizarPaymentMethod(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['AtualizarPaymentMethod'](arg1, arg2, arg3, arg4, arg5);
 }
 
 export function AtualizarPlano(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {

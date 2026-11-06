@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ListarInadimplentes, SalvarComprovante } from "../../wailsjs/go/main/App";
-import { main } from "../../wailsjs/go/models";
+import { models } from "../../wailsjs/go/models";
 
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -12,7 +12,7 @@ function formatDate(d: string): string {
 }
 
 function Cobranca() {
-  const [invoices, setInvoices] = useState<main.InadimplenteReport[]>([]);
+  const [invoices, setInvoices] = useState<models.InadimplenteReport[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,7 +26,7 @@ function Cobranca() {
     setLoading(true);
     try {
       const data = await ListarInadimplentes();
-      setInvoices((data as unknown as main.InadimplenteReport[]) || []);
+      setInvoices((data as unknown as models.InadimplenteReport[]) || []);
     } catch (e) {
       setError(String(e));
     } finally {

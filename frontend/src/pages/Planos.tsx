@@ -7,7 +7,7 @@ import {
   DeletarPlano,
   ListarAlunosPorPlano,
 } from "../../wailsjs/go/main/App";
-import { main } from "../../wailsjs/go/models";
+import { models } from "../../wailsjs/go/models";
 
 interface Plan {
   id: number;
@@ -58,7 +58,7 @@ function Planos({ user }: PlanosProps) {
   const [gracePeriodDays, setGracePeriodDays] = useState(5);
   const [error, setError] = useState("");
 
-  const [studentsMap, setStudentsMap] = useState<Record<number, main.AlunoPorPlano[]>>({});
+  const [studentsMap, setStudentsMap] = useState<Record<number, models.AlunoPorPlano[]>>({});
   const [totalMap, setTotalMap] = useState<Record<number, number>>({});
   const [pageMap, setPageMap] = useState<Record<number, number>>({});
   const [loadingStudents, setLoadingStudents] = useState<Record<number, boolean>>({});
@@ -84,7 +84,7 @@ function Planos({ user }: PlanosProps) {
     setPageMap((prev) => ({ ...prev, [planId]: page }));
     try {
       const res = await ListarAlunosPorPlano(planId, page, PAGE_SIZE) as any;
-      const list = ((Array.isArray(res) ? res[0] : null) || []) as main.AlunoPorPlano[];
+      const list = ((Array.isArray(res) ? res[0] : null) || []) as models.AlunoPorPlano[];
       const total = ((Array.isArray(res) ? res[1] : null) || 0) as number;
       setStudentsMap((prev) => ({ ...prev, [planId]: list }));
       setTotalMap((prev) => ({ ...prev, [planId]: total }));
