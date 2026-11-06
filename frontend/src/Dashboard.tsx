@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PerfilModal from "./pages/Perfil";
 import NotificationBell from "./components/NotificationBell";
+import UserAvatar from "./components/UserAvatar";
 import "./Dashboard.css";
 
 interface User {
@@ -96,10 +97,8 @@ function Dashboard({ user, onLogout, onFotoUpdate, children }: DashboardProps) {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">CatracaVMD</div>
-          <button className="sidebar-user" onClick={() => setShowPerfil(true)}>
-            <div className="sidebar-avatar">
-              {user.foto ? <img src={user.foto} alt="avatar" /> : user.name.charAt(0).toUpperCase()}
-            </div>
+          <button className="sidebar-user-btn" onClick={() => setShowPerfil(true)}>
+            <UserAvatar className="sidebar-user-avatar" name={user.name} foto={user.foto} size={38} />
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user.name}</span>
               <span className="sidebar-user-cargo">{user.cargo.replace("_", " ")}</span>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MeuPerfil, AlterarSenha, AlterarFoto } from "../../wailsjs/go/main/App";
+import UserAvatar from "../components/UserAvatar";
+import { prepararFotoPerfil } from "../utils/image";
 
 interface User {
   id: number;
@@ -35,19 +37,17 @@ function PerfilModal({ user, show, onClose, onFotoUpdate }: PerfilProps) {
   async function handleFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const base64 = reader.result as string;
-        await AlterarFoto(base64);
-        setProfile((prev) => prev ? { ...prev, foto: base64 } : prev);
-        if (onFotoUpdate) onFotoUpdate(base64);
-        mostrarMsg("Foto atualizada com sucesso!", "success");
-      } catch (err) {
-        mostrarMsg(String(err), "error");
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const base64 = await prepararFotoPerfil(file);
+      await AlterarFoto(base64);
+      setProfile((prev) => prev ? { ...prev, foto: base64 } : prev);
+      if (onFotoUpdate) onFotoUpdate(base64);
+      mostrarMsg("Foto atualizada com sucesso!", "success");
+    } catch (err) {
+      mostrarMsg(String(err), "error");
+    } finally {
+      e.target.value = "";
+    }
   }
 
   async function handleSenha(e: React.FormEvent) {
@@ -106,31 +106,20 @@ function PerfilModal({ user, show, onClose, onFotoUpdate }: PerfilProps) {
               {/* Profile Card Header */}
               <div className="vmd-card" style={{ padding: 20, background: "rgba(255, 255, 255, 0.01)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                  <div
+                  <UserAvatar
+                    name={profile.name}
+                    foto={profile.foto}
+                    size={72}
+                    fontSize={28}
+                    onClick={() => fileRef.current?.click()}
+                    title="Alterar foto"
                     style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: "50%",
                       background: "var(--bg-input)",
                       border: "2px solid var(--border-color)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
                       cursor: "pointer",
-                      flexShrink: 0,
-                      position: "relative",
+                      color: "var(--primary)",
                     }}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    {profile.foto ? (
-                      <img src={profile.foto} alt="Perfil" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: 28, fontWeight: 700, color: "var(--primary)" }}>
-                        {profile.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+                  />
                   <input ref={fileRef} type="file" accept="image/*" onChange={handleFoto} style={{ display: "none" }} />
                   
                   <div>

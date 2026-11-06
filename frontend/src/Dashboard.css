@@ -55,18 +55,26 @@
 }
 
 .sidebar-user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   overflow: hidden;
+  flex-shrink: 0;
   background: linear-gradient(135deg, var(--primary) 0%, var(--cyan) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 15px;
   color: #fff;
   box-shadow: 0 4px 10px rgba(199, 157, 51, 0.2);
+}
+
+.sidebar-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .sidebar-user-info {
@@ -74,6 +82,7 @@
   flex-direction: column;
   gap: 2px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .sidebar-user-name {
