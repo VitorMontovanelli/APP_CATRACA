@@ -49,6 +49,7 @@ func autoMigrateModels(db *gorm.DB) {
 		&models.PaymentGateway{},
 		&models.StudentPlan{},
 		&models.Invoice{},
+		&models.DueNotification{},
 		&models.AccessLog{},
 		&models.AuditLog{},
 		&models.Setting{},

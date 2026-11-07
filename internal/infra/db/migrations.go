@@ -56,7 +56,7 @@ func MigrateAdminPermissions(db *gorm.DB) {
 		return
 	}
 	for _, u := range admins {
-		atualizadas := semPermissaoLogs(comPermissaoAgenda(u.Permissoes))
+		atualizadas := comPermissaoConfiguracoes(semPermissaoLogs(comPermissaoAgenda(u.Permissoes)))
 		if atualizadas == u.Permissoes {
 			continue
 		}
@@ -90,6 +90,21 @@ func comPermissaoAgenda(permissoes string) string {
 		}
 	}
 	return permissoes + ",agenda"
+}
+
+// comPermissaoConfiguracoes garante que administradores comuns consigam abrir
+// a tela de Configurações e ajustar a antecedência dos avisos de vencimento.
+func comPermissaoConfiguracoes(permissoes string) string {
+	permissoes = strings.TrimSpace(permissoes)
+	if permissoes == "" {
+		return models.DefaultAdminPermissoes
+	}
+	for _, p := range strings.Split(permissoes, ",") {
+		if strings.TrimSpace(p) == "configuracoes" {
+			return permissoes
+		}
+	}
+	return permissoes + ",configuracoes"
 }
 
 func ensureAvulsoPlan(db *gorm.DB) {

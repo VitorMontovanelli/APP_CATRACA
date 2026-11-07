@@ -33,9 +33,10 @@ func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoi
 		ID, StudentID, PlanID uint
 		PlanPriceCents        int
 		Status                string
+		DueDay                int
 	}
 	var sp spMini
-	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents AS plan_price_cents, sp.status
+	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents AS plan_price_cents, sp.status, sp.due_day
 		FROM student_plans sp JOIN plans p ON p.id = sp.plan_id WHERE sp.id = ?`
 	if err := h.db.Raw(query, studentPlanID).Scan(&sp).Error; err != nil {
 		return nil, err
@@ -52,12 +53,22 @@ func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoi
 		return nil, fmt.Errorf("plano do aluno não está ativo")
 	}
 
+	dueDate := nextDueDate(time.Now(), sp.DueDay)
+	periodo := dueDate[:7]
+	var abertas int64
+	h.db.Model(&models.Invoice{}).
+		Where("student_plan_id = ? AND status IN ('pending', 'overdue') AND substr(due_date, 1, 7) = ?", studentPlanID, periodo).
+		Count(&abertas)
+	if abertas > 0 {
+		return nil, fmt.Errorf("já existe uma fatura em aberto para este período")
+	}
+
 	inv := models.Invoice{
 		StudentPlanID: studentPlanID,
 		StudentID:     sp.StudentID,
 		PlanID:        sp.PlanID,
 		AmountCents:   sp.PlanPriceCents,
-		DueDate:       time.Now().AddDate(0, 1, 0).Format("2006-01-02"),
+		DueDate:       dueDate,
 	}
 	if err := h.db.Create(&inv).Error; err != nil {
 		return nil, err

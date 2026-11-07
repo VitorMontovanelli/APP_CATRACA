@@ -10,7 +10,9 @@ import MetodosPagamento from "./pages/MetodosPagamento";
 import Financeiro from "./pages/Financeiro";
 import Cobranca from "./pages/Cobranca";
 import Backup from "./pages/Backup";
+import Configuracoes from "./pages/Configuracoes";
 import CalendariosAgendamento from "./pages/CalendariosAgendamento";
+import { DueNotificationsProvider } from "./components/DueNotificationsProvider";
 
 interface User {
   id: number;
@@ -73,42 +75,46 @@ function App() {
   }
 
   return (
-    <Dashboard
-      user={user}
-      onLogout={() => setUser(null)}
-      onFotoUpdate={(foto) => setUser((prev) => (prev ? { ...prev, foto } : prev))}
-    >
-      {(page) => (
-        <PageErrorBoundary key={page}>
-          {(() => {
-            switch (page) {
-              case "home":
-                return <Home />;
-              case "usuarios":
-                return <Usuarios user={user} />;
-              case "alunos":
-                return <Alunos user={user} />;
-              case "agenda":
-                return <CalendariosAgendamento />;
-              case "planos":
-                return <Planos user={user} />;
-              case "metodos_pagamento":
-                return <MetodosPagamento user={user} />;
-              case "financeiro":
-                return <Financeiro user={user} />;
-              case "cobranca":
-                return <Cobranca />;
-              case "logs":
-                return <Logs />;
-              case "backup":
-                return <Backup />;
-              default:
-                return <Usuarios user={user} />;
-            }
-          })()}
-        </PageErrorBoundary>
-      )}
-    </Dashboard>
+    <DueNotificationsProvider>
+      <Dashboard
+        user={user}
+        onLogout={() => setUser(null)}
+        onFotoUpdate={(foto) => setUser((prev) => (prev ? { ...prev, foto } : prev))}
+      >
+        {(page) => (
+          <PageErrorBoundary key={page}>
+            {(() => {
+              switch (page) {
+                case "home":
+                  return <Home />;
+                case "usuarios":
+                  return <Usuarios user={user} />;
+                case "alunos":
+                  return <Alunos user={user} />;
+                case "agenda":
+                  return <CalendariosAgendamento />;
+                case "planos":
+                  return <Planos user={user} />;
+                case "metodos_pagamento":
+                  return <MetodosPagamento user={user} />;
+                case "financeiro":
+                  return <Financeiro user={user} />;
+                case "cobranca":
+                  return <Cobranca />;
+                case "logs":
+                  return <Logs />;
+                case "backup":
+                  return <Backup />;
+                case "configuracoes":
+                  return <Configuracoes />;
+                default:
+                  return <Usuarios user={user} />;
+              }
+            })()}
+          </PageErrorBoundary>
+        )}
+      </Dashboard>
+    </DueNotificationsProvider>
   );
 }
 

@@ -122,11 +122,15 @@ export function ListarAlunosPorPlano(arg1:number,arg2:number,arg3:number):Promis
 
 export function ListarAuditLogs():Promise<Array<models.AuditLog>>;
 
+export function ListarAvisosVencimento():Promise<Array<models.DueNotification>>;
+
 export function ListarCapacidadesCalendarioMes(arg1:string,arg2:number,arg3:number):Promise<Array<models.CapacidadeDia>>;
 
 export function ListarCapacidadesMes(arg1:number,arg2:number):Promise<Array<models.CapacidadeDia>>;
 
 export function ListarCobranca():Promise<Array<models.CobrancaAluno>>;
+
+export function ListarFaturasVencendo():Promise<Array<models.FaturaVencendo>>;
 
 export function ListarHistoricoPagamentos():Promise<Array<models.Invoice>>;
 
@@ -152,9 +156,15 @@ export function ListarUsuarios():Promise<Array<models.User>>;
 
 export function Login(arg1:string,arg2:string):Promise<models.User>;
 
+export function MarcarAvisoComoLido(arg1:number):Promise<void>;
+
+export function MarcarTodosAvisosComoLidos():Promise<void>;
+
 export function MeuPerfil():Promise<models.User>;
 
 export function ObterConfigAgendaIndividual():Promise<models.ConfigAgendaIndividual>;
+
+export function ObterConfigAvisoVencimento():Promise<models.AvisoVencimentoConfig>;
 
 export function ObterConfigTelegram():Promise<models.BackupConfig>;
 
@@ -184,6 +194,8 @@ export function RemoverLaudoAluno(arg1:number):Promise<void>;
 
 export function SalvarComprovante(arg1:number,arg2:string,arg3:string):Promise<void>;
 
+export function SalvarConfigAvisoVencimento(arg1:number):Promise<void>;
+
 export function SalvarConfigTelegram(arg1:string,arg2:string,arg3:boolean):Promise<void>;
 
 export function SalvarFotoAluno(arg1:number,arg2:string):Promise<void>;
@@ -195,3 +207,5 @@ export function SalvarPermissoesUsuario(arg1:number,arg2:string):Promise<void>;
 export function TestarTelegram():Promise<void>;
 
 export function VerificarAcessoAluno(arg1:number):Promise<models.ResultadoAcesso>;
+
+export function VerificarAvisosVencimento():Promise<Array<models.DueNotification>>;

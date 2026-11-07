@@ -3,6 +3,7 @@ module catraca-app
 go 1.26.4
 
 require (
+	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3
 	github.com/glebarez/sqlite v1.11.0
 	github.com/wailsapp/wails/v2 v2.17.1
 	golang.org/x/crypto v0.57.0
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.16 // indirect

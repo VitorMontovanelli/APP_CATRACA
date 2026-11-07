@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AppVersion, ObterMetricasHome, ObterEstatisticasAcesso } from "../../wailsjs/go/main/App";
+import { useDueNotifications } from "../components/DueNotificationsProvider";
 
 interface PlanoContador {
   nome: string;
@@ -26,6 +27,17 @@ function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatDateBR(data: string): string {
+  const [ano, mes, dia] = data.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+}
+
+function prazoTexto(dias: number): string {
+  if (dias === 0) return "vence hoje";
+  if (dias === 1) return "vence amanhã";
+  return `vence em ${dias} dias`;
+}
+
 function Home() {
   const [metrics, setMetrics] = useState<MetricasHome | null>(null);
   const [version, setVersion] = useState("");
@@ -34,6 +46,7 @@ function Home() {
   const [accessData, setAccessData] = useState<AcessoEstatistica[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const { upcoming, loading: dueLoading, refresh: refreshDue } = useDueNotifications();
 
   useEffect(() => {
     async function loadMetrics() {
@@ -142,6 +155,64 @@ function Home() {
             <div style={{ fontSize: 28, opacity: 0.8 }}>{card.icon}</div>
           </div>
         ))}
+      </div>
+
+      {/* Card - Vencendo em breve */}
+      <div className="vmd-card" style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Vencendo em breve</h3>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0" }}>
+              Faturas em aberto com vencimento nos próximos 7 dias.
+            </p>
+          </div>
+          <button
+            className="vmd-btn vmd-btn-secondary"
+            style={{ padding: "4px 12px", height: 28, fontSize: 12, minWidth: "auto" }}
+            onClick={() => refreshDue()}
+            disabled={dueLoading}
+          >
+            Atualizar
+          </button>
+        </div>
+
+        {dueLoading ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 13, padding: "12px 0" }}>
+            Carregando faturas...
+          </div>
+        ) : upcoming.length === 0 ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 13, padding: "12px 0" }}>
+            Nenhuma fatura vencendo nos próximos 7 dias.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {upcoming.map((f) => (
+              <div
+                key={f.invoice_id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "10px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)" }}>
+                    {f.student_name}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    {prazoTexto(f.dias_restantes)}, {formatDateBR(f.due_date)}
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--warning)", flexShrink: 0 }}>
+                  {formatCents(f.amount_cents)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Access Log Chart Section */}

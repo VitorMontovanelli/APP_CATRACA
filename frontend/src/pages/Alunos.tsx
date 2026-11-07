@@ -323,6 +323,10 @@ function Alunos({ user }: AlunosProps) {
       setError("Informe o telefone do aluno.");
       return;
     }
+    if (planId > 0 && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) {
+      setError("O dia de vencimento deve estar entre 1 e 31.");
+      return;
+    }
     setUploadingLaudo(true);
     try {
       let studentId: number | null = editId;
@@ -900,15 +904,18 @@ function Alunos({ user }: AlunosProps) {
                 </div>
 
                 <div className="vmd-form-group" style={{ marginBottom: 0, width: "50%" }}>
-                  <label className="vmd-label">Dia do Vencimento Mensal</label>
+                  <label className="vmd-label">Dia de vencimento</label>
                   <input
                     type="number"
                     min={1}
-                    max={28}
+                    max={31}
                     value={dueDay}
                     onChange={(e) => setDueDay(Number(e.target.value))}
                     className="vmd-input"
                   />
+                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
+                    Se o mês não tiver esse dia, será usado o último dia do mês.
+                  </div>
                 </div>
 
                 <div className="vmd-form-group" style={{ marginBottom: 0 }}>

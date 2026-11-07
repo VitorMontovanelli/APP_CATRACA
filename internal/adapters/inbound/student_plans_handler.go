@@ -37,6 +37,8 @@ func (h *StudentPlansHandler) CriarStudentComPlano(nome, cpf, dataNascimento, te
 		return nil, err
 	}
 
+	dueDayNormalizado := normalizarDueDay(int(dueDay))
+
 	tx := h.db.Begin()
 
 	student := models.Student{
@@ -57,7 +59,7 @@ func (h *StudentPlansHandler) CriarStudentComPlano(nome, cpf, dataNascimento, te
 		sp := models.StudentPlan{
 			StudentID:       student.ID,
 			PlanID:          planID,
-			DueDay:          int(dueDay),
+			DueDay:          dueDayNormalizado,
 			PaymentMethodID: uintPtr(formaPagamentoID),
 		}
 		if err := tx.Create(&sp).Error; err != nil {

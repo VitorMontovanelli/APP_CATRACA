@@ -22,11 +22,12 @@ const AVAILABLE_PAGES = [
   { key: "cobranca", label: "Cobranças", icon: "⚠️" },
   { key: "metodos_pagamento", label: "Pagamentos", icon: "💳" },
   { key: "usuarios", label: "Usuários Administrativos", icon: "👥" },
+  { key: "configuracoes", label: "Configurações", icon: "⚙️" },
   { key: "logs", label: "Logs de Acesso", icon: "📋" },
 ];
 
 export default function PermissoesModal({ user, onClose, onSaved }: PermissoesModalProps) {
-  const initialPerms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "logs"];
+  const initialPerms = user.permissoes ? user.permissoes.split(",") : ["home", "agenda", "alunos", "planos", "financeiro", "cobranca", "metodos_pagamento", "usuarios", "configuracoes", "logs"];
   const [selected, setSelected] = useState<string[]>(initialPerms);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");

@@ -23,10 +23,39 @@ func (h *BillingRecurringHandler) SetContext(ctx context.Context) {
 	h.ctx = ctx
 }
 
+func normalizarDueDay(day int) int {
+	if day < 1 {
+		return 5
+	}
+	if day > 31 {
+		return 31
+	}
+	return day
+}
+
+// ultimoDiaDoMes devolve o último dia do mês informado.
+func ultimoDiaDoMes(ano int, mes time.Month, loc *time.Location) int {
+	return time.Date(ano, mes+1, 0, 0, 0, 0, 0, loc).Day()
+}
+
+// dataComDia monta uma data no mês informado usando o dia desejado. Quando o
+// mês não possui esse dia (ex.: 31 em fevereiro), usa o último dia do mês.
+func dataComDia(ano int, mes time.Month, dia int, loc *time.Location) time.Time {
+	if dia < 1 {
+		dia = 1
+	}
+	ultimo := ultimoDiaDoMes(ano, mes, loc)
+	if dia > ultimo {
+		dia = ultimo
+	}
+	return time.Date(ano, mes, dia, 0, 0, 0, 0, loc)
+}
+
 func nextDueDate(from time.Time, day int) string {
-	next := time.Date(from.Year(), from.Month(), day, 0, 0, 0, 0, from.Location())
-	if next.Before(from) || next.Equal(from) {
-		next = next.AddDate(0, 1, 0)
+	day = normalizarDueDay(day)
+	next := dataComDia(from.Year(), from.Month(), day, from.Location())
+	if !next.After(from) {
+		next = dataComDia(from.Year(), from.Month()+1, day, from.Location())
 	}
 	return next.Format("2006-01-02")
 }
@@ -44,13 +73,14 @@ func (h *BillingRecurringHandler) GerarProximaFatura(invoiceID uint) {
 
 	var dueDay int
 	h.db.Raw("SELECT due_day FROM student_plans WHERE id = ?", cur.StudentPlanID).Scan(&dueDay)
-	if dueDay == 0 {
-		dueDay = 5
-	}
+	dueDay = normalizarDueDay(dueDay)
 
 	nextDue := nextDueDate(time.Now(), dueDay)
+	periodo := nextDue[:7]
 	var count int64
-	h.db.Model(&models.Invoice{}).Where("student_plan_id = ? AND due_date = ?", cur.StudentPlanID, nextDue).Count(&count)
+	h.db.Model(&models.Invoice{}).
+		Where("student_plan_id = ? AND status IN ('pending', 'overdue') AND substr(due_date, 1, 7) = ?", cur.StudentPlanID, periodo).
+		Count(&count)
 	if count > 0 {
 		return
 	}
@@ -100,7 +130,7 @@ func (h *BillingRecurringHandler) CriarStudentPlan(studentID, planID uint, dueDa
 	sp := models.StudentPlan{
 		StudentID: studentID,
 		PlanID:    planID,
-		DueDay:    dueDay,
+		DueDay:    normalizarDueDay(dueDay),
 	}
 	if err := h.db.Create(&sp).Error; err != nil {
 		return nil, err
@@ -148,6 +178,7 @@ func (h *BillingRecurringHandler) AtualizarPlanoAluno(studentID, planID, formaPa
 	if !h.session.IsAdmin() {
 		return fmt.Errorf("permissão negada")
 	}
+	dueDay = normalizarDueDay(dueDay)
 
 	var current models.StudentPlan
 	hasCurrent := h.db.Where("student_id = ? AND status = 'active'", studentID).First(&current).Error == nil

@@ -6,6 +6,7 @@ import {
   FingerprintIcon,
   type ToastType,
 } from "./ToastProvider";
+import { useDueNotifications } from "./DueNotificationsProvider";
 
 function BellIcon() {
   return (
@@ -26,8 +27,20 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function NotificationBell() {
   const { history, activeCount, removeNotification, clearNotifications } = useToast();
+  const { notifications, unreadCount, markRead, markAllRead, refresh } = useDueNotifications();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +65,13 @@ function NotificationBell() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (open) refresh();
+  }, [open, refresh]);
+
+  const badgeCount = unreadCount + activeCount;
+  const vazio = notifications.length === 0 && history.length === 0;
+
   return (
     <div className="toast-bell-wrap" ref={rootRef}>
       <button
@@ -61,44 +81,86 @@ function NotificationBell() {
         aria-expanded={open}
       >
         <BellIcon />
-        {activeCount > 0 && <span className="toast-bell-badge">{activeCount}</span>}
+        {badgeCount > 0 && <span className="toast-bell-badge">{badgeCount}</span>}
       </button>
 
       {open && (
         <div className="toast-panel">
           <div className="toast-panel-header">
             <span className="toast-panel-title">Notificações</span>
-            {history.length > 0 && (
-              <button className="toast-panel-clear" onClick={clearNotifications}>
-                Limpar tudo
-              </button>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {unreadCount > 0 && (
+                <button className="toast-panel-clear" onClick={markAllRead}>
+                  Marcar lidos
+                </button>
+              )}
+              {history.length > 0 && (
+                <button className="toast-panel-clear" onClick={clearNotifications}>
+                  Limpar atividade
+                </button>
+              )}
+            </div>
           </div>
 
-          {history.length === 0 ? (
+          {vazio ? (
             <div className="toast-panel-empty">Nenhuma notificação</div>
           ) : (
-            history.map((n) => (
-              <div key={n.id} className={`toast-panel-item toast-panel-item--${n.type}`}>
-                <div className="toast-icon">
-                  <ItemIcon type={n.type} />
-                </div>
-                <div className="toast-content">
-                  <div className="toast-panel-item-title">{n.title}</div>
-                  {n.description && (
-                    <div className="toast-panel-item-desc">{n.description}</div>
-                  )}
-                  <div className="toast-panel-item-time">{formatTime(n.timestamp)}</div>
-                </div>
-                <button
-                  className="toast-panel-item-remove"
-                  onClick={() => removeNotification(n.id)}
-                  aria-label="Remover notificação"
-                >
-                  ×
-                </button>
-              </div>
-            ))
+            <>
+              {notifications.length > 0 && (
+                <>
+                  <div className="toast-panel-section">Vencimentos</div>
+                  {notifications.map((n) => (
+                    <div
+                      key={`due-${n.id}`}
+                      className={`toast-panel-item toast-panel-item--${n.kind === "overdue" ? "error" : "warning"}${n.read_at ? " toast-panel-item--read" : ""}`}
+                    >
+                      <div className="toast-icon">
+                        <WarningIcon />
+                      </div>
+                      <div className="toast-content">
+                        <div className="toast-panel-item-title">{n.message}</div>
+                        <div className="toast-panel-item-time">{formatDateTime(n.created_at)}</div>
+                        {!n.read_at && (
+                          <button
+                            className="toast-panel-item-action"
+                            onClick={() => markRead(n.id)}
+                          >
+                            Marcar como lido
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {history.length > 0 && (
+                <>
+                  <div className="toast-panel-section">Atividade</div>
+                  {history.map((n) => (
+                    <div key={n.id} className={`toast-panel-item toast-panel-item--${n.type}`}>
+                      <div className="toast-icon">
+                        <ItemIcon type={n.type} />
+                      </div>
+                      <div className="toast-content">
+                        <div className="toast-panel-item-title">{n.title}</div>
+                        {n.description && (
+                          <div className="toast-panel-item-desc">{n.description}</div>
+                        )}
+                        <div className="toast-panel-item-time">{formatTime(n.timestamp)}</div>
+                      </div>
+                      <button
+                        className="toast-panel-item-remove"
+                        onClick={() => removeNotification(n.id)}
+                        aria-label="Remover notificação"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
       )}

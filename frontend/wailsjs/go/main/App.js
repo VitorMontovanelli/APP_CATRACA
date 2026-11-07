@@ -242,6 +242,10 @@ export function ListarAuditLogs() {
   return window['go']['main']['App']['ListarAuditLogs']();
 }
 
+export function ListarAvisosVencimento() {
+  return window['go']['main']['App']['ListarAvisosVencimento']();
+}
+
 export function ListarCapacidadesCalendarioMes(arg1, arg2, arg3) {
   return window['go']['main']['App']['ListarCapacidadesCalendarioMes'](arg1, arg2, arg3);
 }
@@ -252,6 +256,10 @@ export function ListarCapacidadesMes(arg1, arg2) {
 
 export function ListarCobranca() {
   return window['go']['main']['App']['ListarCobranca']();
+}
+
+export function ListarFaturasVencendo() {
+  return window['go']['main']['App']['ListarFaturasVencendo']();
 }
 
 export function ListarHistoricoPagamentos() {
@@ -302,12 +310,24 @@ export function Login(arg1, arg2) {
   return window['go']['main']['App']['Login'](arg1, arg2);
 }
 
+export function MarcarAvisoComoLido(arg1) {
+  return window['go']['main']['App']['MarcarAvisoComoLido'](arg1);
+}
+
+export function MarcarTodosAvisosComoLidos() {
+  return window['go']['main']['App']['MarcarTodosAvisosComoLidos']();
+}
+
 export function MeuPerfil() {
   return window['go']['main']['App']['MeuPerfil']();
 }
 
 export function ObterConfigAgendaIndividual() {
   return window['go']['main']['App']['ObterConfigAgendaIndividual']();
+}
+
+export function ObterConfigAvisoVencimento() {
+  return window['go']['main']['App']['ObterConfigAvisoVencimento']();
 }
 
 export function ObterConfigTelegram() {
@@ -366,6 +386,10 @@ export function SalvarComprovante(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarComprovante'](arg1, arg2, arg3);
 }
 
+export function SalvarConfigAvisoVencimento(arg1) {
+  return window['go']['main']['App']['SalvarConfigAvisoVencimento'](arg1);
+}
+
 export function SalvarConfigTelegram(arg1, arg2, arg3) {
   return window['go']['main']['App']['SalvarConfigTelegram'](arg1, arg2, arg3);
 }
@@ -388,4 +412,8 @@ export function TestarTelegram() {
 
 export function VerificarAcessoAluno(arg1) {
   return window['go']['main']['App']['VerificarAcessoAluno'](arg1);
+}
+
+export function VerificarAvisosVencimento() {
+  return window['go']['main']['App']['VerificarAvisosVencimento']();
 }

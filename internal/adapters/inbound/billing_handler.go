@@ -11,6 +11,7 @@ type BillingHandler struct {
 	*BillingInvoicesHandler
 	*BillingRecurringHandler
 	*BillingReportsHandler
+	*BillingDueNotificationsHandler
 }
 
 func NewBillingHandler(db *gorm.DB, session *SessionManager) *BillingHandler {
@@ -18,12 +19,14 @@ func NewBillingHandler(db *gorm.DB, session *SessionManager) *BillingHandler {
 	plans := NewBillingPlansHandler(db, session)
 	invoices := NewBillingInvoicesHandler(db, session, recurring)
 	reports := NewBillingReportsHandler(db, session)
+	notifications := NewBillingDueNotificationsHandler(db, session)
 
 	return &BillingHandler{
-		BillingPlansHandler:     plans,
-		BillingInvoicesHandler:  invoices,
-		BillingRecurringHandler: recurring,
-		BillingReportsHandler:   reports,
+		BillingPlansHandler:            plans,
+		BillingInvoicesHandler:         invoices,
+		BillingRecurringHandler:        recurring,
+		BillingReportsHandler:          reports,
+		BillingDueNotificationsHandler: notifications,
 	}
 }
 
@@ -32,4 +35,5 @@ func (h *BillingHandler) SetContext(ctx context.Context) {
 	h.BillingInvoicesHandler.SetContext(ctx)
 	h.BillingRecurringHandler.SetContext(ctx)
 	h.BillingReportsHandler.SetContext(ctx)
+	h.BillingDueNotificationsHandler.SetContext(ctx)
 }
