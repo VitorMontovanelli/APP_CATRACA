@@ -1,6 +1,6 @@
 # Agendamento-App
 
-**Versão:** 2.3.0
+**Versão:** 2.4.0
 
 Sistema desktop de controle de acesso biométrico e gestão financeira para academias, construído com Wails 2, Go e React.
 
