@@ -24,6 +24,24 @@ type AvisoVencimentoConfig struct {
 	DiasAntecedencia int `json:"dias_antecedencia"`
 }
 
+// FaturaCobranca é uma fatura em aberto exibida no Painel de Cobranças, com o
+// prazo já calculado em dias (negativo quando vencida).
+type FaturaCobranca struct {
+	InvoiceID     uint    `json:"invoice_id"`
+	StudentID     uint    `json:"student_id"`
+	Nome          string  `json:"nome"`
+	CPF           string  `json:"cpf"`
+	PlanoNome     string  `json:"plano_nome"`
+	PlanoPreco    int     `json:"plano_preco"`
+	ValorDevido   int     `json:"valor_devido"`
+	DueDate       string  `json:"due_date"`
+	DiasRestantes int     `json:"dias_restantes"`
+	NoPrazoAviso  bool    `json:"no_prazo_aviso"`
+	TotalEmAberto int     `json:"total_em_aberto"`
+	Comprovante   *string `json:"comprovante"`
+	StudentAtivo  bool    `json:"student_ativo"`
+}
+
 // FaturaVencendo é um item do card "Vencendo em breve" da Visão Geral.
 type FaturaVencendo struct {
 	InvoiceID     uint   `json:"invoice_id"`

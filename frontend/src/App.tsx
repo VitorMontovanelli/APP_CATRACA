@@ -10,7 +10,6 @@ import MetodosPagamento from "./pages/MetodosPagamento";
 import Financeiro from "./pages/Financeiro";
 import Cobranca from "./pages/Cobranca";
 import Backup from "./pages/Backup";
-import Configuracoes from "./pages/Configuracoes";
 import CalendariosAgendamento from "./pages/CalendariosAgendamento";
 import { DueNotificationsProvider } from "./components/DueNotificationsProvider";
 
@@ -105,8 +104,6 @@ function App() {
                   return <Logs />;
                 case "backup":
                   return <Backup />;
-                case "configuracoes":
-                  return <Configuracoes />;
                 default:
                   return <Usuarios user={user} />;
               }

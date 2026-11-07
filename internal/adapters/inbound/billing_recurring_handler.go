@@ -75,6 +75,13 @@ func (h *BillingRecurringHandler) GerarProximaFatura(invoiceID uint) {
 	h.db.Raw("SELECT due_day FROM student_plans WHERE id = ?", cur.StudentPlanID).Scan(&dueDay)
 	dueDay = normalizarDueDay(dueDay)
 
+	// Planos avulsos (diária) não geram fatura recorrente.
+	var durationDays int
+	h.db.Raw("SELECT p.duration_days FROM plans p JOIN student_plans sp ON sp.plan_id = p.id WHERE sp.id = ?", cur.StudentPlanID).Scan(&durationDays)
+	if durationDays <= 1 {
+		return
+	}
+
 	nextDue := nextDueDate(time.Now(), dueDay)
 	periodo := nextDue[:7]
 	var count int64

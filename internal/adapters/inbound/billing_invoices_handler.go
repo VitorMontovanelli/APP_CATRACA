@@ -34,9 +34,11 @@ func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoi
 		PlanPriceCents        int
 		Status                string
 		DueDay                int
+		DurationDays          int
 	}
 	var sp spMini
-	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents AS plan_price_cents, sp.status, sp.due_day
+	query := `SELECT sp.id, sp.student_id, sp.plan_id, p.price_cents AS plan_price_cents, sp.status, sp.due_day,
+		p.duration_days AS duration_days
 		FROM student_plans sp JOIN plans p ON p.id = sp.plan_id WHERE sp.id = ?`
 	if err := h.db.Raw(query, studentPlanID).Scan(&sp).Error; err != nil {
 		return nil, err
@@ -53,12 +55,25 @@ func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoi
 		return nil, fmt.Errorf("plano do aluno não está ativo")
 	}
 
+	// Planos avulsos (diária) não têm dia fixo: a fatura vence no próprio dia
+	// em que é gerada e o controle de duplicidade é diário, não mensal.
+	avulso := sp.DurationDays <= 1
 	dueDate := nextDueDate(time.Now(), sp.DueDay)
-	periodo := dueDate[:7]
+	if avulso {
+		dueDate = dataSemFuso(time.Now()).Format("2006-01-02")
+	}
+
 	var abertas int64
-	h.db.Model(&models.Invoice{}).
-		Where("student_plan_id = ? AND status IN ('pending', 'overdue') AND substr(due_date, 1, 7) = ?", studentPlanID, periodo).
-		Count(&abertas)
+	if avulso {
+		h.db.Model(&models.Invoice{}).
+			Where("student_plan_id = ? AND status IN ('pending', 'overdue') AND due_date = ?", studentPlanID, dueDate).
+			Count(&abertas)
+	} else {
+		periodo := dueDate[:7]
+		h.db.Model(&models.Invoice{}).
+			Where("student_plan_id = ? AND status IN ('pending', 'overdue') AND substr(due_date, 1, 7) = ?", studentPlanID, periodo).
+			Count(&abertas)
+	}
 	if abertas > 0 {
 		return nil, fmt.Errorf("já existe uma fatura em aberto para este período")
 	}

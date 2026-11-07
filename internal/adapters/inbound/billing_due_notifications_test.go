@@ -295,3 +295,113 @@ func TestConfigAvisoVencimentoPadraoEPersistencia(t *testing.T) {
 		t.Fatal("esperava erro para antecedência acima de 30")
 	}
 }
+
+func TestListarFaturasCobrancaClassificaVencendoEAtrasadas(t *testing.T) {
+	notifications, _, database := setupDueNotificationsTest(t)
+	if err := notifications.SalvarConfigAvisoVencimento(1); err != nil {
+		t.Fatalf("salvar antecedência: %v", err)
+	}
+
+	session := NewSessionManager(database)
+	actor := models.User{Name: "Admin Relatórios", Email: "admin-relatorios@teste", Senha: "x", Cargo: "super_admin", Ativo: true}
+	if err := database.Create(&actor).Error; err != nil {
+		t.Fatalf("criar ator de relatórios: %v", err)
+	}
+	session.SetActor(actor.ID, "super_admin")
+	reports := NewBillingReportsHandler(database, session)
+
+	hoje := time.Now()
+	criarFaturaTeste(t, database, hoje.AddDate(0, 0, -3).Format("2006-01-02"), "pending", true)
+	criarFaturaTeste(t, database, hoje.Format("2006-01-02"), "pending", true)
+	criarFaturaTeste(t, database, hoje.AddDate(0, 0, 1).Format("2006-01-02"), "pending", true)
+	criarFaturaTeste(t, database, hoje.AddDate(0, 0, 10).Format("2006-01-02"), "pending", true)
+	criarFaturaTeste(t, database, hoje.AddDate(0, 0, 1).Format("2006-01-02"), "paid", true)
+	criarFaturaTeste(t, database, hoje.AddDate(0, 0, 1).Format("2006-01-02"), "pending", false)
+
+	lista, err := reports.ListarFaturasCobranca()
+	if err != nil {
+		t.Fatalf("listar faturas de cobrança: %v", err)
+	}
+	if len(lista) != 5 {
+		t.Fatalf("esperava 5 faturas em aberto (incluindo aluno inativo), obteve %d", len(lista))
+	}
+
+	var atrasadas, hojeNoPrazo, amanhaNoPrazo, futuraNoPrazo, inativas int
+	for _, f := range lista {
+		if !f.StudentAtivo {
+			inativas++
+		}
+		switch f.DiasRestantes {
+		case -3:
+			atrasadas++
+			if f.NoPrazoAviso {
+				t.Error("fatura vencida não deveria estar no prazo de aviso")
+			}
+			if f.TotalEmAberto != f.ValorDevido {
+				t.Errorf("total em aberto = %d; want %d", f.TotalEmAberto, f.ValorDevido)
+			}
+		case 0:
+			hojeNoPrazo++
+			if !f.NoPrazoAviso {
+				t.Error("fatura que vence hoje deveria estar no prazo de aviso")
+			}
+		case 1:
+			amanhaNoPrazo++
+			if !f.NoPrazoAviso {
+				t.Error("fatura que vence amanhã deveria estar no prazo de aviso")
+			}
+		case 10:
+			futuraNoPrazo++
+			if f.NoPrazoAviso {
+				t.Error("fatura em 10 dias não deveria estar no prazo de aviso")
+			}
+		}
+	}
+	if atrasadas != 1 || hojeNoPrazo != 1 || amanhaNoPrazo != 2 || futuraNoPrazo != 1 {
+		t.Errorf("classificação inesperada: atrasadas=%d hoje=%d amanhã=%d futura=%d",
+			atrasadas, hojeNoPrazo, amanhaNoPrazo, futuraNoPrazo)
+	}
+	if inativas != 1 {
+		t.Errorf("esperava 1 fatura de aluno inativo no painel; obteve %d", inativas)
+	}
+}
+
+func TestGerarInvoiceAvulsoVenceHojeENaoRecorre(t *testing.T) {
+	_, invoices, database := setupDueNotificationsTest(t)
+
+	aluno := models.Student{Nome: "Aluno Avulso", CPF: proximoCPFTeste(), Ativo: true}
+	if err := database.Create(&aluno).Error; err != nil {
+		t.Fatalf("criar aluno avulso: %v", err)
+	}
+	plano := models.Plan{Name: "Avulso Teste " + proximoCPFTeste(), DurationDays: 1, PriceCents: 3500, Active: true}
+	if err := database.Create(&plano).Error; err != nil {
+		t.Fatalf("criar plano avulso: %v", err)
+	}
+	sp := models.StudentPlan{StudentID: aluno.ID, PlanID: plano.ID, DueDay: 10, Status: "active"}
+	if err := database.Create(&sp).Error; err != nil {
+		t.Fatalf("criar plano do aluno avulso: %v", err)
+	}
+
+	inv, err := invoices.GerarInvoice(sp.ID)
+	if err != nil {
+		t.Fatalf("gerar fatura avulsa: %v", err)
+	}
+	hoje := time.Now().Format("2006-01-02")
+	if inv.DueDate != hoje {
+		t.Errorf("vencimento do avulso = %s; want %s", inv.DueDate, hoje)
+	}
+
+	if _, err := invoices.GerarInvoice(sp.ID); err == nil {
+		t.Fatal("esperava erro ao gerar segunda fatura avulsa no mesmo dia")
+	}
+
+	recurring := NewBillingRecurringHandler(database, NewSessionManager(database))
+	recurring.GerarProximaFatura(inv.ID)
+	var total int64
+	if err := database.Model(&models.Invoice{}).Where("student_plan_id = ?", sp.ID).Count(&total).Error; err != nil {
+		t.Fatalf("contar faturas: %v", err)
+	}
+	if total != 1 {
+		t.Errorf("plano avulso não deve gerar recorrência; total de faturas = %d", total)
+	}
+}

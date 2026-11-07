@@ -6,7 +6,7 @@ import {
   FingerprintIcon,
   type ToastType,
 } from "./ToastProvider";
-import { useDueNotifications } from "./DueNotificationsProvider";
+import { useDueNotifications, type DueNotification } from "./DueNotificationsProvider";
 
 function BellIcon() {
   return (
@@ -40,7 +40,7 @@ function formatDateTime(iso: string): string {
 
 function NotificationBell() {
   const { history, activeCount, removeNotification, clearNotifications } = useToast();
-  const { notifications, unreadCount, markRead, markAllRead, refresh } = useDueNotifications();
+  const { notifications, unreadCount, markRead, markAllRead, refresh, requestFocus } = useDueNotifications();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +71,12 @@ function NotificationBell() {
 
   const badgeCount = unreadCount + activeCount;
   const vazio = notifications.length === 0 && history.length === 0;
+
+  function abrirFatura(n: DueNotification) {
+    if (!n.read_at) markRead(n.id);
+    requestFocus(n.invoice_id);
+    setOpen(false);
+  }
 
   return (
     <div className="toast-bell-wrap" ref={rootRef}>
@@ -112,7 +118,16 @@ function NotificationBell() {
                   {notifications.map((n) => (
                     <div
                       key={`due-${n.id}`}
-                      className={`toast-panel-item toast-panel-item--${n.kind === "overdue" ? "error" : "warning"}${n.read_at ? " toast-panel-item--read" : ""}`}
+                      className={`toast-panel-item toast-panel-item--clickable toast-panel-item--${n.kind === "overdue" ? "error" : "warning"}${n.read_at ? " toast-panel-item--read" : ""}`}
+                      onClick={() => abrirFatura(n)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          abrirFatura(n);
+                        }
+                      }}
                     >
                       <div className="toast-icon">
                         <WarningIcon />
@@ -123,7 +138,10 @@ function NotificationBell() {
                         {!n.read_at && (
                           <button
                             className="toast-panel-item-action"
-                            onClick={() => markRead(n.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markRead(n.id);
+                            }}
                           >
                             Marcar como lido
                           </button>

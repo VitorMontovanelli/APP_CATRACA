@@ -42,8 +42,14 @@ func (h *BillingDueNotificationsHandler) validarAdmin() error {
 }
 
 func (h *BillingDueNotificationsHandler) diasAntecedencia() int {
+	return diasAntecedenciaAviso(h.db)
+}
+
+// diasAntecedenciaAviso lê a antecedência configurada, aplicando o padrão e o
+// limite máximo caso o valor salvo esteja inválido.
+func diasAntecedenciaAviso(db *gorm.DB) int {
 	var valor string
-	h.db.Model(&models.Setting{}).Where("key = ?", chaveAvisoVencimentoDias).Pluck("value", &valor)
+	db.Model(&models.Setting{}).Where("key = ?", chaveAvisoVencimentoDias).Pluck("value", &valor)
 	dias, err := strconv.Atoi(strings.TrimSpace(valor))
 	if err != nil || dias < 0 {
 		return avisoVencimentoDiasPadrao

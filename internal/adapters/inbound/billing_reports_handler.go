@@ -25,10 +25,10 @@ func (h *BillingReportsHandler) SetContext(ctx context.Context) {
 
 func (h *BillingReportsHandler) ListarCobranca() ([]models.CobrancaAluno, error) {
 	type alunoRaw struct {
-		StudentID                      uint
-		Nome, CPF, PlanoNome           string
-		PlanoPreco, DueDay             int
-		StatusPlano                    string
+		StudentID            uint
+		Nome, CPF, PlanoNome string
+		PlanoPreco, DueDay   int
+		StatusPlano          string
 	}
 	var alunos []alunoRaw
 	query := `SELECT s.id AS student_id, s.nome, s.cpf, p.name AS plano_nome,
@@ -115,6 +115,75 @@ func (h *BillingReportsHandler) ListarInadimplentes() ([]models.InadimplenteRepo
 			UltimoPagamento: r.UltimoPagamento,
 			TotalEmAberto:   r.TotalEmAberto,
 		}
+	}
+	return list, nil
+}
+
+// ListarFaturasCobranca devolve todas as faturas em aberto (pendentes e
+// vencidas) para o Painel de Cobranças, já com o prazo calculado em dias.
+func (h *BillingReportsHandler) ListarFaturasCobranca() ([]models.FaturaCobranca, error) {
+	type faturaRaw struct {
+		StudentID     uint
+		Nome          string
+		CPF           string
+		PlanoNome     string
+		PlanoPreco    int
+		InvoiceID     uint
+		ValorDevido   int
+		DueDate       string
+		TotalEmAberto int
+		Comprovante   *string
+		StudentAtivo  bool
+	}
+
+	var rows []faturaRaw
+	query := `SELECT s.id AS student_id, s.nome, s.cpf, p.name AS plano_nome,
+		p.price_cents AS plano_preco, i.id AS invoice_id, i.amount_cents AS valor_devido,
+		i.due_date, i.comprovante, s.ativo AS student_ativo,
+		aberto.total AS total_em_aberto
+		FROM invoices i
+		JOIN students s ON s.id = i.student_id
+		JOIN plans p ON p.id = i.plan_id
+		JOIN (SELECT student_plan_id AS spid, SUM(amount_cents) AS total
+		      FROM invoices WHERE status IN ('pending','overdue')
+		      GROUP BY student_plan_id) aberto ON aberto.spid = i.student_plan_id
+		WHERE i.status IN ('pending','overdue')
+		ORDER BY i.due_date ASC, i.id ASC`
+	if err := h.db.Raw(query).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	hoje := dataSemFuso(time.Now())
+	antecedencia := diasAntecedenciaAviso(h.db)
+	list := make([]models.FaturaCobranca, 0, len(rows))
+	for _, r := range rows {
+		vencimento, err := parseData(r.DueDate)
+		if err != nil {
+			continue
+		}
+		diasRestantes := diasEntre(vencimento, hoje)
+		noPrazoAviso := false
+		if diasRestantes >= 0 {
+			// Mesma regra dos avisos: sábado/domingo antecipam a abertura do
+			// prazo para o último dia útil anterior.
+			abertura := ajustarParaDiaUtil(vencimento.AddDate(0, 0, -antecedencia))
+			noPrazoAviso = !hoje.Before(abertura)
+		}
+		list = append(list, models.FaturaCobranca{
+			InvoiceID:     r.InvoiceID,
+			StudentID:     r.StudentID,
+			Nome:          r.Nome,
+			CPF:           r.CPF,
+			PlanoNome:     r.PlanoNome,
+			PlanoPreco:    r.PlanoPreco,
+			ValorDevido:   r.ValorDevido,
+			DueDate:       r.DueDate,
+			DiasRestantes: diasRestantes,
+			NoPrazoAviso:  noPrazoAviso,
+			TotalEmAberto: r.TotalEmAberto,
+			Comprovante:   r.Comprovante,
+			StudentAtivo:  r.StudentAtivo,
+		})
 	}
 	return list, nil
 }

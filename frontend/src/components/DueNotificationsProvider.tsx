@@ -46,6 +46,9 @@ interface DueNotificationsContextValue {
   refresh: () => Promise<void>;
   markRead: (id: number) => Promise<void>;
   markAllRead: () => Promise<void>;
+  focusInvoiceId: number | null;
+  requestFocus: (invoiceId: number) => void;
+  clearFocus: () => void;
 }
 
 const DueNotificationsContext = createContext<DueNotificationsContextValue | undefined>(undefined);
@@ -57,6 +60,7 @@ export function DueNotificationsProvider({ children }: { children: ReactNode }) 
   const [notifications, setNotifications] = useState<DueNotification[]>([]);
   const [upcoming, setUpcoming] = useState<FaturaVencendo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [focusInvoiceId, setFocusInvoiceId] = useState<number | null>(null);
   const knownIds = useRef<Set<number> | null>(null);
 
   const refresh = useCallback(async () => {
@@ -129,9 +133,39 @@ export function DueNotificationsProvider({ children }: { children: ReactNode }) 
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
+  const requestFocus = useCallback((invoiceId: number) => {
+    setFocusInvoiceId(invoiceId);
+  }, []);
+
+  const clearFocus = useCallback(() => {
+    setFocusInvoiceId(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ notifications, unreadCount, upcoming, loading, refresh, markRead, markAllRead }),
-    [notifications, unreadCount, upcoming, loading, refresh, markRead, markAllRead],
+    () => ({
+      notifications,
+      unreadCount,
+      upcoming,
+      loading,
+      refresh,
+      markRead,
+      markAllRead,
+      focusInvoiceId,
+      requestFocus,
+      clearFocus,
+    }),
+    [
+      notifications,
+      unreadCount,
+      upcoming,
+      loading,
+      refresh,
+      markRead,
+      markAllRead,
+      focusInvoiceId,
+      requestFocus,
+      clearFocus,
+    ],
   );
 
   return (

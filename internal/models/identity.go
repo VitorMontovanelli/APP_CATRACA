@@ -5,7 +5,7 @@ import (
 )
 
 // DefaultAdminPermissoes define as telas liberadas por padrão para novos administradores.
-const DefaultAdminPermissoes = "home,agenda,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios,configuracoes"
+const DefaultAdminPermissoes = "home,agenda,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios"
 
 type User struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
@@ -16,7 +16,7 @@ type User struct {
 	RegistradorID *uint     `json:"registrador_id"`
 	Ativo         bool      `gorm:"default:true" json:"ativo"`
 	Foto          *string   `gorm:"size:500000" json:"foto"`
-	Permissoes    string    `gorm:"size:1000;default:'home,agenda,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios,configuracoes'" json:"permissoes"`
+	Permissoes    string    `gorm:"size:1000;default:'home,agenda,alunos,planos,financeiro,cobranca,metodos_pagamento,usuarios'" json:"permissoes"`
 	CriadoEm      time.Time `gorm:"autoCreateTime" json:"criado_em"`
 }
 

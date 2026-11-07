@@ -1019,6 +1019,42 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class FaturaCobranca {
+	    invoice_id: number;
+	    student_id: number;
+	    nome: string;
+	    cpf: string;
+	    plano_nome: string;
+	    plano_preco: number;
+	    valor_devido: number;
+	    due_date: string;
+	    dias_restantes: number;
+	    no_prazo_aviso: boolean;
+	    total_em_aberto: number;
+	    comprovante?: string;
+	    student_ativo: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new FaturaCobranca(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.invoice_id = source["invoice_id"];
+	        this.student_id = source["student_id"];
+	        this.nome = source["nome"];
+	        this.cpf = source["cpf"];
+	        this.plano_nome = source["plano_nome"];
+	        this.plano_preco = source["plano_preco"];
+	        this.valor_devido = source["valor_devido"];
+	        this.due_date = source["due_date"];
+	        this.dias_restantes = source["dias_restantes"];
+	        this.no_prazo_aviso = source["no_prazo_aviso"];
+	        this.total_em_aberto = source["total_em_aberto"];
+	        this.comprovante = source["comprovante"];
+	        this.student_ativo = source["student_ativo"];
+	    }
+	}
 	export class FaturaVencendo {
 	    invoice_id: number;
 	    student_id: number;

@@ -258,6 +258,10 @@ export function ListarCobranca() {
   return window['go']['main']['App']['ListarCobranca']();
 }
 
+export function ListarFaturasCobranca() {
+  return window['go']['main']['App']['ListarFaturasCobranca']();
+}
+
 export function ListarFaturasVencendo() {
   return window['go']['main']['App']['ListarFaturasVencendo']();
 }

@@ -130,6 +130,8 @@ export function ListarCapacidadesMes(arg1:number,arg2:number):Promise<Array<mode
 
 export function ListarCobranca():Promise<Array<models.CobrancaAluno>>;
 
+export function ListarFaturasCobranca():Promise<Array<models.FaturaCobranca>>;
+
 export function ListarFaturasVencendo():Promise<Array<models.FaturaVencendo>>;
 
 export function ListarHistoricoPagamentos():Promise<Array<models.Invoice>>;

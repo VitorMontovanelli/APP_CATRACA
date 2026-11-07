@@ -3,13 +3,12 @@ import {
   ListarInvoicesPendentes,
   ListarHistoricoPagamentos,
   ListarStudentPlans,
-  ListarPaymentMethods,
-  ConfirmarPagamento,
   CancelarInvoice,
   DeletarInvoice,
   EstornarPagamento,
 } from "../../wailsjs/go/main/App";
 import { useToast } from "../components/ToastProvider";
+import PagamentoModal from "../components/PagamentoModal";
 
 interface Invoice {
   id: number;
@@ -45,22 +44,8 @@ interface StudentPlan {
   plan_price_cents: number;
 }
 
-interface PaymentMethod {
-  id: number;
-  name: string;
-  type: string;
-  enabled: boolean;
-}
-
 interface FinanceiroProps {
   user: { cargo: string };
-}
-
-interface PagamentoForm {
-  invoice: Invoice;
-  valor: string;
-  data: string;
-  metodoId: number;
 }
 
 function formatCents(cents: number): string {
@@ -125,13 +110,10 @@ function Financeiro({ user }: FinanceiroProps) {
   const [pendentes, setPendentes] = useState<Invoice[]>([]);
   const [historico, setHistorico] = useState<Invoice[]>([]);
   const [studentPlans, setStudentPlans] = useState<StudentPlan[]>([]);
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [busca, setBusca] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"invoices" | "history" | "plans">("invoices");
-  const [pagamento, setPagamento] = useState<PagamentoForm | null>(null);
-  const [salvando, setSalvando] = useState(false);
-  const [erroPagamento, setErroPagamento] = useState("");
+  const [pagamento, setPagamento] = useState<Invoice | null>(null);
   const { showToast } = useToast();
 
   const canManage = user.cargo === "super_admin" || user.cargo === "admin";
@@ -140,70 +122,21 @@ function Financeiro({ user }: FinanceiroProps) {
 
   async function load() {
     try {
-      const [pend, hist, sp, pm] = await Promise.all([
+      const [pend, hist, sp] = await Promise.all([
         ListarInvoicesPendentes(),
         ListarHistoricoPagamentos(),
         ListarStudentPlans(),
-        ListarPaymentMethods(),
       ]);
       setPendentes((pend as unknown as Invoice[]) || []);
       setHistorico((hist as unknown as Invoice[]) || []);
       setStudentPlans((sp as unknown as StudentPlan[]) || []);
-      setMethods((pm as unknown as PaymentMethod[]) || []);
       setError("");
     } catch (e) { setError(String(e)); }
   }
 
-  const formasDisponiveis = methods.filter((m) => m.enabled);
-
   function abrirPagamento(inv: Invoice) {
     if (!canManage) return;
-    const metodoPadrao = formasDisponiveis[0]?.id || 0;
-    setErroPagamento("");
-    setPagamento({
-      invoice: inv,
-      valor: (inv.amount_cents / 100).toFixed(2),
-      data: hojeISO(),
-      metodoId: metodoPadrao,
-    });
-  }
-
-  async function submitPagamento(e: React.FormEvent) {
-    e.preventDefault();
-    if (!pagamento) return;
-    setErroPagamento("");
-
-    const valorNumerico = Number(pagamento.valor.replace(",", "."));
-    if (!Number.isFinite(valorNumerico) || valorNumerico < 0) {
-      setErroPagamento("Informe um valor pago válido.");
-      return;
-    }
-    if (!pagamento.metodoId) {
-      setErroPagamento("Selecione a forma de pagamento.");
-      return;
-    }
-    if (!pagamento.data) {
-      setErroPagamento("Informe a data do pagamento.");
-      return;
-    }
-
-    setSalvando(true);
-    try {
-      const cents = Math.round(valorNumerico * 100);
-      await ConfirmarPagamento(pagamento.invoice.id, pagamento.metodoId, cents, pagamento.data);
-      const aluno = pagamento.invoice.student_name;
-      setPagamento(null);
-      await load();
-      showToast({
-        type: "success",
-        title: "Pagamento registrado",
-        description: `Fatura de ${aluno} confirmada como paga.`,
-      });
-    } catch (err) {
-      setErroPagamento(String(err));
-    } finally {
-      setSalvando(false);
-    }
+    setPagamento(inv);
   }
 
   async function cancelInvoice(inv: Invoice) {
@@ -270,12 +203,6 @@ function Financeiro({ user }: FinanceiroProps) {
   const historicoFiltrado = termo
     ? historico.filter((h) => normalizar(h.student_name).includes(termo))
     : historico;
-
-  const valorFatura = pagamento ? pagamento.invoice.amount_cents : 0;
-  const valorInformado = pagamento
-    ? Math.round((Number(pagamento.valor.replace(",", ".")) || 0) * 100)
-    : 0;
-  const desconto = Math.max(valorFatura - valorInformado, 0);
 
   return (
     <div style={{ animation: "fadeIn 0.3s ease-out" }}>
@@ -485,86 +412,16 @@ function Financeiro({ user }: FinanceiroProps) {
       )}
 
       {pagamento && (
-        <div className="vmd-modal-overlay" onClick={() => !salvando && setPagamento(null)}>
-          <form
-            onSubmit={submitPagamento}
-            className="vmd-modal-content"
-            style={{ maxWidth: 440 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="vmd-modal-header">
-              <h3 style={{ fontSize: 16, margin: 0 }}>Confirmar Pagamento</h3>
-              <button type="button" className="vmd-modal-close" onClick={() => setPagamento(null)} disabled={salvando}>✕</button>
-            </div>
-
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 12 }}>
-              <div><strong style={{ color: "var(--text-main)" }}>{pagamento.invoice.student_name}</strong></div>
-              <div style={{ marginTop: 2 }}>Plano: {pagamento.invoice.plan_name}</div>
-              <div style={{ marginTop: 2 }}>Valor da fatura: {formatCents(pagamento.invoice.amount_cents)}</div>
-            </div>
-
-            <div className="vmd-form-group" style={{ marginTop: 16 }}>
-              <label className="vmd-label">Valor pago (R$)</label>
-              <input
-                className="vmd-input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={pagamento.valor}
-                onChange={(e) => setPagamento({ ...pagamento, valor: e.target.value })}
-                required
-              />
-              {desconto > 0 && (
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                  Desconto de {formatCents(desconto)} aplicado sobre o valor da fatura.
-                </div>
-              )}
-            </div>
-
-            <div className="vmd-form-group">
-              <label className="vmd-label">Data do pagamento</label>
-              <input
-                className="vmd-input"
-                type="date"
-                value={pagamento.data}
-                onChange={(e) => setPagamento({ ...pagamento, data: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="vmd-form-group">
-              <label className="vmd-label">Forma de pagamento</label>
-              <select
-                className="vmd-select"
-                value={pagamento.metodoId}
-                onChange={(e) => setPagamento({ ...pagamento, metodoId: Number(e.target.value) })}
-                required
-              >
-                <option value={0} disabled>Selecione...</option>
-                {formasDisponiveis.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {formasDisponiveis.length === 0 && (
-              <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 12 }}>
-                Nenhuma forma de pagamento ativa. Ative ou cadastre uma em "Pagamentos".
-              </div>
-            )}
-
-            {erroPagamento && <div className="vmd-alert vmd-alert-danger" style={{ marginBottom: 12 }}>⚠️ {erroPagamento}</div>}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-              <button type="button" className="vmd-btn vmd-btn-secondary" onClick={() => setPagamento(null)} disabled={salvando}>
-                Cancelar
-              </button>
-              <button type="submit" className="vmd-btn vmd-btn-success" disabled={salvando || formasDisponiveis.length === 0}>
-                {salvando ? "Confirmando..." : "Confirmar Pagamento"}
-              </button>
-            </div>
-          </form>
-        </div>
+        <PagamentoModal
+          invoice={{
+            id: pagamento.id,
+            student_name: pagamento.student_name,
+            plan_name: pagamento.plan_name,
+            amount_cents: pagamento.amount_cents,
+          }}
+          onClose={() => setPagamento(null)}
+          onConfirmed={load}
+        />
       )}
     </div>
   );

@@ -323,7 +323,7 @@ function Alunos({ user }: AlunosProps) {
       setError("Informe o telefone do aluno.");
       return;
     }
-    if (planId > 0 && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) {
+    if (planId > 0 && !planoAvulso && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) {
       setError("O dia de vencimento deve estar entre 1 e 31.");
       return;
     }
@@ -441,6 +441,10 @@ function Alunos({ user }: AlunosProps) {
     if (!d) return "—";
     return d.split("T")[0] || d;
   }
+
+  // Planos avulsos (diária) não têm dia fixo de vencimento mensal.
+  const planoSelecionado = plans.find((pl) => pl.id === planId);
+  const planoAvulso = !!planoSelecionado && planoSelecionado.duration_days <= 1;
 
   return (
     <div style={{ animation: "fadeIn 0.3s ease-out" }}>
@@ -903,20 +907,27 @@ function Alunos({ user }: AlunosProps) {
                   </div>
                 </div>
 
-                <div className="vmd-form-group" style={{ marginBottom: 0, width: "50%" }}>
-                  <label className="vmd-label">Dia de vencimento</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={31}
-                    value={dueDay}
-                    onChange={(e) => setDueDay(Number(e.target.value))}
-                    className="vmd-input"
-                  />
-                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
-                    Se o mês não tiver esse dia, será usado o último dia do mês.
+                {!planoAvulso && (
+                  <div className="vmd-form-group" style={{ marginBottom: 0, width: "50%" }}>
+                    <label className="vmd-label">Dia de vencimento</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={dueDay}
+                      onChange={(e) => setDueDay(Number(e.target.value))}
+                      className="vmd-input"
+                    />
+                    <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
+                      Se o mês não tiver esse dia, será usado o último dia do mês.
+                    </div>
                   </div>
-                </div>
+                )}
+                {planoAvulso && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    Plano avulso (diária): a fatura vence no dia em que for gerada, sem dia fixo mensal.
+                  </div>
+                )}
 
                 <div className="vmd-form-group" style={{ marginBottom: 0 }}>
                   <label className="vmd-label">Laudo do Aluno</label>
