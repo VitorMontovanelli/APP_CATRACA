@@ -168,6 +168,7 @@ function Cobranca() {
         const base64 = reader.result as string;
         await SalvarComprovante(pendingUploadId, base64, file.name);
         await load();
+        await refreshAvisos();
       } catch (err) {
         setError(String(err));
       } finally {

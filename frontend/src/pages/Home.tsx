@@ -63,6 +63,12 @@ function Home() {
     loadMetrics();
   }, []);
 
+  // O provider fica acima do Dashboard e mantém os avisos em memória entre
+  // trocas de página; ao voltar para a Visão Geral, sincroniza novamente.
+  useEffect(() => {
+    refreshDue();
+  }, [refreshDue]);
+
   useEffect(() => {
     async function loadChart() {
       setLoadingChart(true);

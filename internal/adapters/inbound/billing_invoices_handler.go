@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,15 @@ func NewBillingInvoicesHandler(db *gorm.DB, session *SessionManager, recurring *
 
 func (h *BillingInvoicesHandler) SetContext(ctx context.Context) {
 	h.ctx = ctx
+}
+
+// removerAvisosDaFatura elimina os avisos de vencimento ligados a uma fatura
+// que acabou de ser baixada. Sem isso, o sino e o card "Vencendo em breve"
+// continuam mostrando a pendência até o próximo ciclo de verificação.
+func (h *BillingInvoicesHandler) removerAvisosDaFatura(invoiceID uint) {
+	if err := h.db.Where("invoice_id = ?", invoiceID).Delete(&models.DueNotification{}).Error; err != nil {
+		log.Printf("erro ao remover avisos de vencimento da fatura %d: %v", invoiceID, err)
+	}
 }
 
 func (h *BillingInvoicesHandler) GerarInvoice(studentPlanID uint) (*models.Invoice, error) {
@@ -236,6 +246,7 @@ func (h *BillingInvoicesHandler) ConfirmarPagamento(invoiceID uint, paymentMetho
 	if err != nil {
 		return err
 	}
+	h.removerAvisosDaFatura(invoiceID)
 	h.session.RegistrarAuditComDetalhes("confirmou_pagamento", invoiceID,
 		fmt.Sprintf("valor=%d, metodo=%d (%s), data=%s, por=%s", paidAmountCents, paymentMethodID, metodo.Name, paidAt.Format("2006-01-02"), confirmedBy))
 	h.recurring.GerarProximaFatura(invoiceID)
@@ -340,6 +351,7 @@ func (h *BillingInvoicesHandler) SalvarComprovante(invoiceID uint, base64Data, f
 	if err != nil {
 		return fmt.Errorf("erro ao atualizar fatura: %w", err)
 	}
+	h.removerAvisosDaFatura(invoiceID)
 	h.session.RegistrarAuditComDetalhes("confirmou_pagamento", invoiceID, fmt.Sprintf("comprovante=%s, invoice=%d", dest, invoiceID))
 	h.recurring.GerarProximaFatura(invoiceID)
 	return nil

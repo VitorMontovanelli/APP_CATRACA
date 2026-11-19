@@ -62,8 +62,13 @@ export function DueNotificationsProvider({ children }: { children: ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [focusInvoiceId, setFocusInvoiceId] = useState<number | null>(null);
   const knownIds = useRef<Set<number> | null>(null);
+  const refreshEmCurso = useRef(false);
 
   const refresh = useCallback(async () => {
+    // Home e provider montam juntos no login; evita duas leituras concorrentes
+    // (e dois avisos repetidos) para a mesma lista de vencimentos.
+    if (refreshEmCurso.current) return;
+    refreshEmCurso.current = true;
     try {
       const [lista, faturas] = await Promise.all([
         VerificarAvisosVencimento(),
@@ -100,6 +105,7 @@ export function DueNotificationsProvider({ children }: { children: ReactNode }) 
       console.error("Erro ao verificar avisos de vencimento", e);
     } finally {
       setLoading(false);
+      refreshEmCurso.current = false;
     }
   }, [showToast]);
 

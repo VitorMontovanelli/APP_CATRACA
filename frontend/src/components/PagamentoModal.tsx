@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmarPagamento, ListarPaymentMethods } from "../../wailsjs/go/main/App";
 import { useToast } from "./ToastProvider";
+import { useDueNotifications } from "./DueNotificationsProvider";
 
 export interface FaturaParaPagamento {
   id: number;
@@ -44,6 +45,7 @@ export default function PagamentoModal({ invoice, onClose, onConfirmed }: Pagame
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const { showToast } = useToast();
+  const { refresh: refreshAvisos } = useDueNotifications();
 
   useEffect(() => {
     let ativo = true;
@@ -91,6 +93,7 @@ export default function PagamentoModal({ invoice, onClose, onConfirmed }: Pagame
         title: "Pagamento registrado",
         description: `Fatura de ${invoice.student_name} confirmada como paga.`,
       });
+      await refreshAvisos();
       onConfirmed();
       onClose();
     } catch (err) {
